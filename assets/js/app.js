@@ -21,6 +21,10 @@ import {
   renderEventsPage
 } from './events.js';
 
+import {
+  renderAdminPage
+} from './admin.js';
+
 const state = {
   frontendData: null,
   categories: [],
@@ -134,10 +138,14 @@ function registerRoutes() {
 
   registerRoute(
     'admin',
-    () => renderPlaceholder(
-      'Administration',
-      'Der gemeinsame passwortgeschützte Adminbereich wird hier integriert.'
-    )
+    () => renderAdminPage({
+      contentElement:
+        elements.content,
+      setPageHeading:
+        setPageHeading,
+      categories:
+        state.categories
+    })
   );
 }
 
@@ -183,6 +191,17 @@ async function loadInitialData() {
           state.categories,
         refreshFrontendData:
           refreshFrontendData
+      });
+    } else if (
+      window.location.hash === '#admin'
+    ) {
+      await renderAdminPage({
+        contentElement:
+          elements.content,
+        setPageHeading:
+          setPageHeading,
+        categories:
+          state.categories
       });
     } else {
       renderDashboard();

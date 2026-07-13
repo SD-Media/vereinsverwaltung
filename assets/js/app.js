@@ -17,6 +17,10 @@ import {
   navigate
 } from './router.js';
 
+import {
+  renderEventsPage
+} from './events.js';
+
 const state = {
   frontendData: null,
   categories: [],
@@ -87,10 +91,21 @@ function registerRoutes() {
 
   registerRoute(
     'events',
-    () => renderPlaceholder(
-      'Einsätze',
-      'Veranstaltungen, Aufgaben und offene Plätze werden hier dargestellt.'
-    )
+    () => renderEventsPage({
+      contentElement:
+        elements.content,
+      setPageHeading:
+        setPageHeading,
+      settings:
+        state.frontendData &&
+        state.frontendData.einstellungen
+          ? state.frontendData.einstellungen
+          : {},
+      categories:
+        state.categories,
+      refreshFrontendData:
+        refreshFrontendData
+    })
   );
 
   registerRoute(
@@ -150,7 +165,28 @@ async function loadInitialData() {
 
     applyTenantConfiguration();
     setConnection('online', 'Verbunden');
-    renderDashboard();
+
+    if (
+      window.location.hash === '#events'
+    ) {
+      await renderEventsPage({
+        contentElement:
+          elements.content,
+        setPageHeading:
+          setPageHeading,
+        settings:
+          state.frontendData &&
+          state.frontendData.einstellungen
+            ? state.frontendData.einstellungen
+            : {},
+        categories:
+          state.categories,
+        refreshFrontendData:
+          refreshFrontendData
+      });
+    } else {
+      renderDashboard();
+    }
   } catch (error) {
     state.error = error;
     setConnection(
@@ -161,6 +197,16 @@ async function loadInitialData() {
   } finally {
     setLoading(false);
   }
+}
+
+async function refreshFrontendData() {
+  const frontendData =
+    await apiGet('frontenddata');
+
+  state.frontendData =
+    frontendData;
+
+  applyTenantConfiguration();
 }
 
 function applyTenantConfiguration() {

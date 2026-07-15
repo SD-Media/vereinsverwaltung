@@ -35,6 +35,10 @@ import {
   renderAdminPage
 } from './admin.js';
 
+import {
+  renderPointsPage
+} from './points.js';
+
 const elements = {
   app:
     document.getElementById('app'),
@@ -157,10 +161,11 @@ function registerRoutes() {
   registerRoute(
     'points',
     () =>
-      renderPlaceholder(
-        'Punkte',
-        'Dieser Bereich erscheint nur bei aktiviertem Punktesystem.'
-      )
+      renderPointsPage({
+        contentElement:
+          elements.content,
+        setPageHeading
+      })
   );
 
   registerRoute(
@@ -220,10 +225,11 @@ async function renderCurrentPage() {
   if (
     route === 'points'
   ) {
-    return renderPlaceholder(
-      'Punkte',
-      'Dieser Bereich erscheint nur bei aktiviertem Punktesystem.'
-    );
+    return renderPointsPage({
+      contentElement:
+        elements.content,
+      setPageHeading
+    });
   }
 
   if (

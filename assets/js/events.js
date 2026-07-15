@@ -12,7 +12,8 @@ import {
   getAllEvents,
   createStoreBackup,
   restoreStoreBackup,
-  addEntryOptimistic
+  addEntryOptimistic,
+  finalizeEntryOptimistic
 } from './store.js';
 
 const viewState = {
@@ -999,28 +1000,39 @@ function openEntryDialog(
       );
 
       try {
-        await apiPost(
-          'createentry',
-          {
-            data:
-              payload
-          }
+        const savedEntry =
+          await apiPost(
+            'createentry',
+            {
+              data:
+                payload
+            }
+          );
+
+        finalizeEntryOptimistic(
+          temporaryId,
+          savedEntry
         );
 
-        refreshStore()
-          .then(() =>
-            renderOverview(
-              contentElement,
-              options
-            )
-          )
-          .catch(
-            error =>
-              console.warn(
-                'Hintergrundaktualisierung fehlgeschlagen.',
-                error
+        window.setTimeout(
+          () => {
+            refreshStore()
+              .then(() =>
+                renderOverview(
+                  contentElement,
+                  options
+                )
               )
-          );
+              .catch(
+                error =>
+                  console.warn(
+                    'Spätere Hintergrundaktualisierung fehlgeschlagen.',
+                    error
+                  )
+              );
+          },
+          20000
+        );
       } catch (error) {
         restoreStoreBackup(
           backup

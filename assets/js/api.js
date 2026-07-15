@@ -23,27 +23,96 @@ export function getTenant() {
   return tenant;
 }
 
-export async function apiGet(action, params = {}) {
-  const url = new URL(APP_CONFIG.apiUrl);
+export async function apiGet(
+  action,
+  params = {}
+) {
+  const maximumAttempts =
+    3;
 
-  url.searchParams.set('tenant', tenant);
-  url.searchParams.set('action', action);
-  url.searchParams.set('_', String(Date.now()));
+  let lastError;
 
-  Object.entries(params).forEach(([key, value]) => {
-    if (
-      value !== undefined &&
-      value !== null &&
-      value !== ''
-    ) {
-      url.searchParams.set(key, String(value));
+  for (
+    let attempt = 1;
+    attempt <= maximumAttempts;
+    attempt++
+  ) {
+    const url =
+      new URL(
+        APP_CONFIG.apiUrl
+      );
+
+    url.searchParams.set(
+      'tenant',
+      tenant
+    );
+
+    url.searchParams.set(
+      'action',
+      action
+    );
+
+    url.searchParams.set(
+      '_',
+      String(
+        Date.now()
+      )
+    );
+
+    Object.entries(
+      params
+    ).forEach(
+      ([
+        key,
+        value
+      ]) => {
+        if (
+          value !== undefined &&
+          value !== null &&
+          value !== ''
+        ) {
+          url.searchParams.set(
+            key,
+            String(value)
+          );
+        }
+      }
+    );
+
+    try {
+      return await requestJson(
+        url,
+        {
+          method:
+            'GET',
+          cache:
+            'no-store'
+        },
+        action
+      );
+    } catch (error) {
+      lastError =
+        error;
+
+      if (
+        attempt >=
+        maximumAttempts ||
+        !isRetryableGetError_(
+          error
+        )
+      ) {
+        throw error;
+      }
+
+      await waitForApiRetry_(
+        attempt === 1
+          ? 1200
+          : 2500
+      );
     }
-  });
+  }
 
-  return requestJson(url, {
-    method: 'GET',
-    cache: 'no-store'
-  }, action);
+  throw lastError;
 }
 
 export async function apiPost(
@@ -72,6 +141,51 @@ export async function apiPost(
       body: JSON.stringify(body)
     },
     action
+  );
+}
+
+/**
+ * Entscheidet, ob ein fehlgeschlagener GET-Aufruf wiederholt werden darf.
+ *
+ * POST-Aufrufe werden bewusst niemals automatisch wiederholt,
+ * damit keine doppelten Datensätze entstehen.
+ *
+ * @param {*} error
+ * @return {boolean}
+ */
+function isRetryableGetError_(error) {
+  if (
+    !(error instanceof ApiError)
+  ) {
+    return true;
+  }
+
+  if (
+    error.status >= 500
+  ) {
+    return true;
+  }
+
+  return (
+    error.status === 0
+  );
+}
+
+/**
+ * Wartet vor einem erneuten API-Aufruf.
+ *
+ * @param {number} milliseconds
+ * @return {Promise<void>}
+ */
+function waitForApiRetry_(
+  milliseconds
+) {
+  return new Promise(
+    resolve =>
+      window.setTimeout(
+        resolve,
+        milliseconds
+      )
   );
 }
 

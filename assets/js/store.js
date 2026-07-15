@@ -55,36 +55,68 @@ export async function loadStore(
   }
 
   state.loadingPromise =
-    Promise.all([
-      apiGet('frontenddata'),
-      state.categories.length &&
-      !force
-        ? Promise.resolve(
-            state.categories
+    (async () => {
+      /*
+       * Google Apps Script benötigt nach längerer Inaktivität
+       * gelegentlich deutlich länger als 20 Sekunden.
+       *
+       * Der große Hauptaufruf wird deshalb zuerst und allein ausgeführt.
+       * Erst danach werden die Kategorien geladen. Dadurch konkurrieren
+       * nicht zwei Anfragen gleichzeitig um den Kaltstart.
+       */
+      const frontendData =
+        await apiGet(
+          'frontenddata',
+          {},
+          {
+            timeoutMs:
+              65000,
+            attempts:
+              2
+          }
+        );
+
+      state.frontendData =
+        frontendData;
+
+      state.loadedAt =
+        Date.now();
+
+      try {
+        const categories =
+          state.categories.length &&
+          !force
+            ? state.categories
+            : await apiGet(
+                'categories',
+                {},
+                {
+                  timeoutMs:
+                    35000,
+                  attempts:
+                    2
+                }
+              );
+
+        state.categories =
+          Array.isArray(
+            categories
           )
-        : apiGet('categories')
-    ])
-      .then(
-        ([
-          frontendData,
-          categories
-        ]) => {
-          state.frontendData =
-            frontendData;
+            ? categories
+            : [];
+      } catch (error) {
+        /*
+         * Die Kernanwendung bleibt nutzbar, wenn lediglich
+         * die Kategorienaktualisierung vorübergehend scheitert.
+         */
+        console.warn(
+          'Kategorien konnten nicht aktualisiert werden.',
+          error
+        );
+      }
 
-          state.categories =
-            Array.isArray(
-              categories
-            )
-              ? categories
-              : [];
-
-          state.loadedAt =
-            Date.now();
-
-          return getStoreSnapshot();
-        }
-      )
+      return getStoreSnapshot();
+    })()
       .finally(() => {
         state.loadingPromise =
           null;

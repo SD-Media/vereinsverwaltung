@@ -752,13 +752,16 @@ function openEntryDialog(
       .frontendData
       .einstellungen || {};
 
+  const normalizedType =
+    normalizeText(
+      list.typ
+    );
+
   const needsContribution =
-    normalizeText(list.typ)
-      .includes('kuchen') ||
-    normalizeText(list.typ)
-      .includes('beitrag') ||
-    normalizeText(list.typ)
-      .includes('sach');
+    normalizedType !==
+      'helfereinsatz' &&
+    normalizedType !==
+      'helfer-einsatz';
 
   root.innerHTML = `
     <div class="dialog-backdrop">
@@ -818,7 +821,7 @@ function openEntryDialog(
           ${needsContribution
             ? `
               <label class="form-field">
-                <span>Beitrag</span>
+                <span>Was wird mitgebracht oder gespendet?</span>
 
                 <input
                   name="beitrag"

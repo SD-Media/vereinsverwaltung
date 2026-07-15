@@ -601,3 +601,38 @@ function findListMutable_(
 
   return null;
 }
+
+
+export function finalizeEntryOptimistic(
+  temporaryId,
+  savedEntry
+) {
+  for (const event of getAllEvents()) {
+    for (const list of (event.listen || [])) {
+      const entry =
+        (list.eintragungen || [])
+          .find(item =>
+            item.id === temporaryId
+          );
+
+      if (!entry) {
+        continue;
+      }
+
+      Object.assign(
+        entry,
+        savedEntry || {}
+      );
+
+      if (
+        savedEntry &&
+        savedEntry.id
+      ) {
+        entry.id =
+          savedEntry.id;
+      }
+
+      return;
+    }
+  }
+}

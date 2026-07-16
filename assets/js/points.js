@@ -202,24 +202,26 @@ function renderPersonalResult(
         )
       : 0;
 
+  const tenantName =
+    getStoreSnapshot()
+      .frontendData
+      .einrichtungsname ||
+    'Verein';
+
   target.innerHTML = `
     <section class="personal-points-card">
+      <div class="print-points-title">
+        Einsätze ${escapeHtml(tenantName)}
+      </div>
       <header>
         <div>
-          <span class="eyebrow">
+          <span class="eyebrow personal-points-name">
             ${escapeHtml(result.name)}
           </span>
-
-          <h2>
-            ${result.sollwertErreicht
-              ? 'Soll erreicht'
-              : 'Aktueller Punktestand'}
-          </h2>
         </div>
 
         <div class="personal-points-actions">
           <button type="button" class="button button-secondary print-hide" id="printPersonalPointsButton">Drucken / als PDF speichern</button>
-          <span class="points-status ${result.sollwertErreicht ? 'is-reached' : 'is-open'}">${result.sollwertErreicht ? 'Erfüllt' : 'Offen'}</span>
         </div>
       </header>
 

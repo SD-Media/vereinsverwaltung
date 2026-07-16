@@ -19,8 +19,8 @@ export function renderPointsPage(
   } = options;
 
   setPageHeading(
-    'Punkte',
-    'Persönlichen Soll-Ist-Stand prüfen'
+    'Meine Einsätze',
+    'Persönliche Einsätze und Soll-Ist-Stand prüfen'
   );
 
   const data =
@@ -217,15 +217,10 @@ function renderPersonalResult(
           </h2>
         </div>
 
-        <span class="points-status ${
-          result.sollwertErreicht
-            ? 'is-reached'
-            : 'is-open'
-        }">
-          ${result.sollwertErreicht
-            ? 'Erfüllt'
-            : 'Offen'}
-        </span>
+        <div class="personal-points-actions">
+          <button type="button" class="button button-secondary print-hide" id="printPersonalPointsButton">Drucken / als PDF speichern</button>
+          <span class="points-status ${result.sollwertErreicht ? 'is-reached' : 'is-open'}">${result.sollwertErreicht ? 'Erfüllt' : 'Offen'}</span>
+        </div>
       </header>
 
       <div class="points-metric-grid">
@@ -241,9 +236,8 @@ function renderPersonalResult(
           label
         )}
 
-        ${metric(
-          'Fehlen',
-          result.rest,
+        ${differenceMetric(
+          Number(result.punkte || 0) - Number(targetValue || 0),
           label
         )}
 
@@ -276,28 +270,7 @@ function renderPersonalResult(
           result.details.length
           ? result.details
               .map(detail => `
-                <div class="points-detail-row">
-                  <div>
-                    <strong>
-                      ${escapeHtml(
-                        detail.veranstaltung ||
-                        'Veranstaltung'
-                      )}
-                    </strong>
-
-                    <span>
-                      ${escapeHtml(
-                        detail.liste ||
-                        'Einsatz'
-                      )}
-                    </span>
-                  </div>
-
-                  <strong>
-                    ${formatNumber(detail.punkte)}
-                    ${escapeHtml(label)}
-                  </strong>
-                </div>
+                ${renderPointDetail(detail, label)}
               `)
               .join('')
           : `
@@ -309,6 +282,36 @@ function renderPersonalResult(
       </div>
     </section>
   `;
+
+  const printButton = target.querySelector('#printPersonalPointsButton');
+  if (printButton) printButton.addEventListener('click', () => window.print());
+
+}
+
+
+function differenceMetric(difference, suffix) {
+  const value = Number(difference || 0);
+  const cssClass = value > 0 ? 'is-positive' : value < 0 ? 'is-negative' : 'is-neutral';
+  return `<div class="points-metric difference-metric ${cssClass}"><span>Differenz</span><strong>${value > 0 ? '+' : ''}${formatNumber(value)}</strong>${suffix ? `<small>${escapeHtml(suffix)}</small>` : ''}</div>`;
+}
+
+function renderPointDetail(detail, label) {
+  const list = findPointListDetails_(detail);
+  const date = detail.datum || (list ? list.datum : '');
+  const time = detail.uhrzeit || (list ? list.uhrzeit : '');
+  const responsible = detail.verantwortlich || (list ? list.verantwortlich : '');
+  return `<div class="points-detail-row"><div><strong>${escapeHtml(detail.veranstaltung || 'Veranstaltung')}</strong><span class="points-detail-title">${escapeHtml(detail.liste || 'Einsatz')}</span><div class="points-detail-meta">${date ? `<span>${escapeHtml(date)}</span>` : ''}${time ? `<span>${escapeHtml(time)} Uhr</span>` : ''}${responsible ? `<span>Verantwortlich: ${escapeHtml(responsible)}</span>` : ''}</div></div><strong>${formatNumber(detail.punkte)} ${escapeHtml(label)}</strong></div>`;
+}
+
+function findPointListDetails_(detail) {
+  const data = getStoreSnapshot().frontendData;
+  if (!data || !data.veranstaltungen) return null;
+  const events = [].concat(data.veranstaltungen.anstehend || [], data.veranstaltungen.vergangen || [], data.veranstaltungen.ohneDatum || []);
+  for (const event of events) {
+    const list = (event.listen || []).find(item => (detail.listenId && item.id === detail.listenId) || (!detail.listenId && String(item.titel || '') === String(detail.liste || '') && String(event.titel || '') === String(detail.veranstaltung || '')));
+    if (list) return list;
+  }
+  return null;
 }
 
 function metric(

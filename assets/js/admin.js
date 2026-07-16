@@ -274,6 +274,14 @@ function renderAdminDashboard(
     </section>
 
     <section class="admin-primary-actions">
+      <button
+        type="button"
+        class="button button-secondary"
+        id="adminPointsConfigButton"
+      >
+        Punktesystem einrichten
+      </button>
+
       ${data.punkte &&
         data.punkte.konfiguration &&
         data.punkte.konfiguration.punkteAktiv === true
@@ -687,6 +695,22 @@ function bindAdminActions(
       }
     );
 
+  const pointsConfigButton =
+    contentElement.querySelector(
+      '#adminPointsConfigButton'
+    );
+
+  if (pointsConfigButton) {
+    pointsConfigButton.addEventListener(
+      'click',
+      () =>
+        openPointsConfigDialog(
+          contentElement,
+          options
+        )
+    );
+  }
+
   const pointsButton =
     contentElement.querySelector(
       '#adminPointsOverviewButton'
@@ -882,6 +906,335 @@ function bindAdminActions(
           )
       );
     });
+}
+
+function openPointsConfigDialog(
+  contentElement,
+  options
+) {
+  const snapshot =
+    getStoreSnapshot();
+
+  const current =
+    snapshot.frontendData &&
+    snapshot.frontendData.punkte &&
+    snapshot.frontendData.punkte
+      .konfiguration
+      ? snapshot.frontendData
+          .punkte
+          .konfiguration
+      : {
+          punkteAktiv:
+            false,
+          punkteBezeichnung:
+            'Punkte',
+          sollwertAktiv:
+            false,
+          sollwert:
+            0
+        };
+
+  const root =
+    contentElement.querySelector(
+      '#adminDialogRoot'
+    );
+
+  root.innerHTML = `
+    <div class="dialog-backdrop">
+      <section
+        class="dialog-card points-config-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pointsConfigTitle"
+      >
+        <header class="dialog-header">
+          <div>
+            <span class="eyebrow">
+              Einrichtungseinstellungen
+            </span>
+
+            <h2 id="pointsConfigTitle">
+              Punktesystem einrichten
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            class="icon-button"
+            data-admin-dialog-close
+            aria-label="Dialog schließen"
+          >
+            ×
+          </button>
+        </header>
+
+        <form
+          id="pointsConfigForm"
+          class="dialog-form"
+        >
+          <section class="settings-switch-card">
+            <div>
+              <strong>
+                Punktesystem verwenden
+              </strong>
+
+              <span>
+                Bei deaktiviertem Punktesystem verschwinden
+                Punktefelder, Hinweise und der Menüpunkt „Punkte“.
+              </span>
+            </div>
+
+            <label class="switch-control">
+              <input
+                name="punkteAktiv"
+                type="checkbox"
+                ${current.punkteAktiv
+                  ? 'checked'
+                  : ''}
+              >
+
+              <span></span>
+            </label>
+          </section>
+
+          <div id="pointsConfigDetails">
+            <label class="form-field">
+              <span>Bezeichnung</span>
+
+              <input
+                name="punkteBezeichnung"
+                type="text"
+                maxlength="60"
+                required
+                value="${escapeHtml(
+                  current.punkteBezeichnung ||
+                  'Punkte'
+                )}"
+                placeholder="Zum Beispiel Punkte oder Arbeitsstunden"
+              >
+            </label>
+
+            <section class="settings-switch-card compact">
+              <div>
+                <strong>
+                  Sollwert verwenden
+                </strong>
+
+                <span>
+                  Legt fest, wie viele Punkte jeder verwendete Name
+                  im Vereinsjahr erreichen soll.
+                </span>
+              </div>
+
+              <label class="switch-control">
+                <input
+                  name="sollwertAktiv"
+                  type="checkbox"
+                  ${current.sollwertAktiv
+                    ? 'checked'
+                    : ''}
+                >
+
+                <span></span>
+              </label>
+            </section>
+
+            <label class="form-field">
+              <span>Sollwert je Name</span>
+
+              <input
+                name="sollwert"
+                type="number"
+                min="0"
+                step="0.5"
+                value="${escapeHtml(
+                  current.sollwert || 0
+                )}"
+              >
+            </label>
+          </div>
+
+          <div
+            id="pointsConfigError"
+            class="form-error"
+            hidden
+          ></div>
+
+          <div class="dialog-actions">
+            <button
+              type="button"
+              class="button button-secondary"
+              data-admin-dialog-close
+            >
+              Abbrechen
+            </button>
+
+            <button
+              type="submit"
+              class="button button-primary"
+            >
+              Einstellungen speichern
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  `;
+
+  const form =
+    root.querySelector(
+      '#pointsConfigForm'
+    );
+
+  const pointsEnabled =
+    form.elements.punkteAktiv;
+
+  const targetEnabled =
+    form.elements.sollwertAktiv;
+
+  const labelInput =
+    form.elements.punkteBezeichnung;
+
+  const targetInput =
+    form.elements.sollwert;
+
+  let dirty =
+    false;
+
+  const updateState =
+    () => {
+      const enabled =
+        pointsEnabled.checked;
+
+      labelInput.disabled =
+        !enabled;
+
+      targetEnabled.disabled =
+        !enabled;
+
+      targetInput.disabled =
+        !enabled ||
+        !targetEnabled.checked;
+
+      if (
+        enabled &&
+        !labelInput.value.trim()
+      ) {
+        labelInput.value =
+          'Punkte';
+      }
+    };
+
+  form.addEventListener(
+    'input',
+    () => {
+      dirty =
+        true;
+    }
+  );
+
+  pointsEnabled.addEventListener(
+    'change',
+    updateState
+  );
+
+  targetEnabled.addEventListener(
+    'change',
+    updateState
+  );
+
+  updateState();
+
+  bindAdminSafeClose(
+    root,
+    () => dirty
+  );
+
+  form.addEventListener(
+    'submit',
+    async event => {
+      event.preventDefault();
+
+      const button =
+        form.querySelector(
+          '[type="submit"]'
+        );
+
+      const errorBox =
+        form.querySelector(
+          '#pointsConfigError'
+        );
+
+      button.disabled =
+        true;
+
+      errorBox.hidden =
+        true;
+
+      try {
+        await apiPost(
+          'updatepointsconfig',
+          {
+            data: {
+              punkteAktiv:
+                pointsEnabled.checked,
+              punkteBezeichnung:
+                labelInput.value.trim() ||
+                'Punkte',
+              sollwertAktiv:
+                targetEnabled.checked,
+              sollwert:
+                Number(
+                  targetInput.value ||
+                  0
+                )
+            }
+          },
+          getStoredToken()
+        );
+
+        dirty =
+          false;
+
+        root.innerHTML =
+          '';
+
+        await refreshStore();
+
+        const updatedSettings =
+          getStoreSnapshot()
+            .frontendData
+            .einstellungen || {};
+
+        document
+          .querySelectorAll(
+            '[data-points-only]'
+          )
+          .forEach(element => {
+            element.hidden =
+              updatedSettings.punkteAktiv !==
+              true;
+          });
+
+        renderAdminDashboard(
+          contentElement,
+          options
+        );
+      } catch (error) {
+        errorBox.textContent =
+          error &&
+          error.message
+            ? error.message
+            : 'Die Einstellungen konnten nicht gespeichert werden.';
+
+        errorBox.hidden =
+          false;
+
+        button.disabled =
+          false;
+      }
+    }
+  );
 }
 
 function openEventForm(

@@ -11,12 +11,111 @@ import {
 const CACHE_MAX_AGE_MS =
   60 * 1000;
 
+const STORE_CACHE_KEY =
+  'vereinsverwaltung_frontend_cache_v1';
+
+const STORE_CACHE_MAX_AGE_MS =
+  24 * 60 * 60 * 1000;
+
 const state = {
   frontendData: null,
   categories: [],
   loadedAt: 0,
   loadingPromise: null
 };
+
+/**
+ * Lädt die zuletzt bekannten Daten aus dem Browser-Cache.
+ *
+ * @return {boolean}
+ */
+export function hydrateStoreFromCache() {
+  try {
+    const raw =
+      window.localStorage.getItem(
+        STORE_CACHE_KEY
+      );
+
+    if (!raw) {
+      return false;
+    }
+
+    const cached =
+      JSON.parse(raw);
+
+    if (
+      !cached ||
+      !cached.frontendData ||
+      !cached.savedAt
+    ) {
+      return false;
+    }
+
+    if (
+      Date.now() -
+      Number(cached.savedAt) >
+      STORE_CACHE_MAX_AGE_MS
+    ) {
+      window.localStorage.removeItem(
+        STORE_CACHE_KEY
+      );
+
+      return false;
+    }
+
+    state.frontendData =
+      cached.frontendData;
+
+    state.categories =
+      Array.isArray(
+        cached.categories
+      )
+        ? cached.categories
+        : [];
+
+    state.loadedAt =
+      Number(
+        cached.savedAt
+      );
+
+    return true;
+  } catch (error) {
+    console.warn(
+      'Browser-Cache konnte nicht gelesen werden.',
+      error
+    );
+
+    return false;
+  }
+}
+
+/**
+ * Speichert die zuletzt bekannten Daten lokal.
+ */
+export function persistStoreCache() {
+  try {
+    if (!state.frontendData) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      STORE_CACHE_KEY,
+      JSON.stringify({
+        frontendData:
+          state.frontendData,
+        categories:
+          state.categories,
+        savedAt:
+          Date.now()
+      })
+    );
+  } catch (error) {
+    console.warn(
+      'Browser-Cache konnte nicht gespeichert werden.',
+      error
+    );
+  }
+}
 
 export function getStoreSnapshot() {
   return {
@@ -115,6 +214,8 @@ export async function loadStore(
         );
       }
 
+      persistStoreCache();
+
       return getStoreSnapshot();
     })()
       .finally(() => {
@@ -140,6 +241,8 @@ export function updateFrontendData(
 
   state.loadedAt =
     Date.now();
+
+  persistStoreCache();
 }
 
 export function updateCategories(
@@ -149,6 +252,8 @@ export function updateCategories(
     Array.isArray(categories)
       ? categories
       : [];
+
+  persistStoreCache();
 }
 
 export function getAllEvents() {

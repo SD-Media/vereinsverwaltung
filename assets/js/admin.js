@@ -26,7 +26,8 @@ import {
   addListOptimistic,
   updateListOptimistic,
   removeListOptimistic,
-  removeEntryOptimistic
+  removeEntryOptimistic,
+  updatePointsConfigOptimistic
 } from './store.js';
 
 const adminState = {
@@ -276,7 +277,7 @@ function renderAdminDashboard(
     <section class="admin-primary-actions">
       <button
         type="button"
-        class="button button-secondary"
+        class="button button-primary admin-points-action-button"
         id="adminPointsConfigButton"
       >
         Punktesystem einrichten
@@ -288,10 +289,10 @@ function renderAdminDashboard(
           ? `
             <button
               type="button"
-              class="button button-secondary"
+              class="button button-primary admin-points-action-button"
               id="adminPointsOverviewButton"
             >
-              Punkteübersicht aller Namen
+              Punkteübersicht
             </button>
           `
           : ''}
@@ -1171,67 +1172,28 @@ function openPointsConfigDialog(
       errorBox.hidden =
         true;
 
+      const payload = {
+        punkteAktiv: pointsEnabled.checked,
+        punkteBezeichnung: labelInput.value.trim() || 'Punkte',
+        sollwertAktiv: targetEnabled.checked,
+        sollwert: Number(targetInput.value || 0)
+      };
+      const backup = createStoreBackup();
+      updatePointsConfigOptimistic(payload);
+      dirty = false;
+      root.innerHTML = '';
+      const mineLink = document.querySelector('[data-route-link="mine"]');
+      if (mineLink) mineLink.hidden = payload.punkteAktiv !== true;
+      renderAdminDashboard(contentElement, options);
       try {
-        await apiPost(
-          'updatepointsconfig',
-          {
-            data: {
-              punkteAktiv:
-                pointsEnabled.checked,
-              punkteBezeichnung:
-                labelInput.value.trim() ||
-                'Punkte',
-              sollwertAktiv:
-                targetEnabled.checked,
-              sollwert:
-                Number(
-                  targetInput.value ||
-                  0
-                )
-            }
-          },
-          getStoredToken()
-        );
-
-        dirty =
-          false;
-
-        root.innerHTML =
-          '';
-
-        await refreshStore();
-
-        const updatedSettings =
-          getStoreSnapshot()
-            .frontendData
-            .einstellungen || {};
-
-        document
-          .querySelectorAll(
-            '[data-points-only]'
-          )
-          .forEach(element => {
-            element.hidden =
-              updatedSettings.punkteAktiv !==
-              true;
-          });
-
-        renderAdminDashboard(
-          contentElement,
-          options
-        );
+        await apiPost('updatepointsconfig', { data: payload }, getStoredToken());
+        window.setTimeout(() => {
+          refreshStore().then(() => renderAdminDashboard(contentElement, options)).catch(error => console.warn('Spätere Punkteaktualisierung fehlgeschlagen.', error));
+        }, 15000);
       } catch (error) {
-        errorBox.textContent =
-          error &&
-          error.message
-            ? error.message
-            : 'Die Einstellungen konnten nicht gespeichert werden.';
-
-        errorBox.hidden =
-          false;
-
-        button.disabled =
-          false;
+        restoreStoreBackup(backup);
+        renderAdminDashboard(contentElement, options);
+        window.alert(error && error.message ? error.message : 'Die Einstellungen konnten nicht gespeichert werden.');
       }
     }
   );
@@ -2764,33 +2726,15 @@ function renderAdminPointsOverview(
               'Fehlende Punkte – höchste zuerst'
             )}
 
-            ${adminSortOption(
-              'status-open',
-              'Offene zuerst'
-            )}
+            ${adminSortOption('status-open', 'Offene zuerst')}
+            ${adminSortOption('only-open', 'Nur offene')}
           </select>
         </label>
       </header>
 
       <div class="admin-points-summary">
-        ${adminOverviewItem(
-          people.length,
-          'Namen'
-        )}
-
-        ${adminOverviewItem(
-          formatAdminPointsNumber(
-            points.gesamtpunkte
-          ),
-          'Gesamtpunkte'
-        )}
-
-        ${adminOverviewItem(
-          people.filter(person =>
-            person.sollwertErreicht
-          ).length,
-          'Soll erfüllt'
-        )}
+        ${adminOverviewItem(people.length, 'Namen')}
+        ${adminOverviewItem(people.filter(person => person.sollwertErreicht).length, 'Soll erfüllt')}
       </div>
 
       <div class="admin-points-table-wrap">
@@ -2800,7 +2744,7 @@ function renderAdminPointsOverview(
               <th>Name</th>
               <th>Soll</th>
               <th>Ist</th>
-              <th>Fehlen</th>
+              <th>Differenz</th>
               <th>Eintragungen</th>
               <th>Status</th>
             </tr>
@@ -2832,12 +2776,7 @@ function renderAdminPointsOverview(
                       ${escapeHtml(label)}
                     </td>
 
-                    <td>
-                      ${formatAdminPointsNumber(
-                        person.rest
-                      )}
-                      ${escapeHtml(label)}
-                    </td>
+                    ${renderAdminDifferenceCell(person, label)}
 
                     <td>
                       ${escapeHtml(
@@ -2928,16 +2867,10 @@ function sortAdminPointsPeople(
       );
 
     case 'status-open':
-      return result.sort(
-        (a, b) =>
-          Number(a.sollwertErreicht) -
-          Number(b.sollwertErreicht) ||
-          String(a.name || '')
-            .localeCompare(
-              String(b.name || ''),
-              'de'
-            )
-      );
+      return result.sort((a, b) => Number(a.sollwertErreicht) - Number(b.sollwertErreicht) || String(a.name || '').localeCompare(String(b.name || ''), 'de'));
+
+    case 'only-open':
+      return result.filter(person => !person.sollwertErreicht).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'de'));
 
     case 'name-asc':
     default:
@@ -2950,6 +2883,12 @@ function sortAdminPointsPeople(
             )
       );
   }
+}
+
+function renderAdminDifferenceCell(person, label) {
+  const difference = Number(person.punkte || 0) - Number(person.sollwert || 0);
+  const cssClass = difference > 0 ? 'is-positive' : difference < 0 ? 'is-negative' : 'is-neutral';
+  return `<td class="points-difference ${cssClass}"><strong>${difference > 0 ? '+' : ''}${formatAdminPointsNumber(difference)}</strong> ${escapeHtml(label)}</td>`;
 }
 
 function formatAdminPointsNumber(

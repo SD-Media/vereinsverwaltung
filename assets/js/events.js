@@ -467,6 +467,16 @@ function renderList(
           : ''}
 
         <div class="assignment-meta">
+          ${settings.punkteAktiv === true
+            ? metaItem(
+                settings.punkteBezeichnung ||
+                  'Punkte',
+                String(
+                  list.punkte ?? 0
+                )
+              )
+            : ''}
+
           ${metaItem(
             'Datum',
             list.datum ||
@@ -486,16 +496,6 @@ function renderList(
             ? metaItem(
                 'Verantwortlich',
                 list.verantwortlich
-              )
-            : ''}
-
-          ${settings.punkteAktiv === true
-            ? metaItem(
-                settings.punkteBezeichnung ||
-                  'Punkte',
-                String(
-                  list.punkte ?? 0
-                )
               )
             : ''}
         </div>

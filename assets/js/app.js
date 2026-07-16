@@ -21,6 +21,7 @@ import {
 import {
   loadStore,
   refreshStore,
+  hydrateStoreFromCache,
   getStoreSnapshot,
   getAllEvents,
   getAllLists,
@@ -68,17 +69,33 @@ document.addEventListener(
 async function initialize() {
   bindNavigation();
   registerRoutes();
+
+  const hasCachedData =
+    hydrateStoreFromCache();
+
   startRouter();
 
   setConnection(
-    'checking',
-    'Verbindung wird geprüft'
+    hasCachedData
+      ? 'online'
+      : 'checking',
+    hasCachedData
+      ? 'Letzter Stand'
+      : 'Verbindung wird geprüft'
   );
 
-  renderInitialLoadingNotice();
+  if (hasCachedData) {
+    applyTenantConfiguration();
+    await renderCurrentPage();
+  } else {
+    renderInitialLoadingNotice();
+  }
 
   try {
-    await loadStore();
+    await loadStore({
+      force:
+        true
+    });
 
     applyTenantConfiguration();
 
@@ -88,9 +105,21 @@ async function initialize() {
     );
 
     await renderCurrentPage();
-
-    refreshInBackground();
   } catch (error) {
+    if (hasCachedData) {
+      setConnection(
+        'online',
+        'Letzter Stand'
+      );
+
+      console.warn(
+        'Aktualisierung fehlgeschlagen; Cache bleibt sichtbar.',
+        error
+      );
+
+      return;
+    }
+
     setConnection(
       'offline',
       'Keine Verbindung'
@@ -356,15 +385,6 @@ function renderDashboard() {
       )[0];
 
   elements.content.innerHTML = `
-    <section class="info-banner">
-      <span class="info-banner-icon">i</span>
-      <div>
-        <strong>Daten werden geladen und aktualisiert.</strong>
-        <span>
-          Dies kann beim ersten Öffnen einen kleinen Moment dauern.
-        </span>
-      </div>
-    </section>
 
     <section class="hero-card">
       <div>
@@ -438,15 +458,6 @@ function renderInitialLoadingNotice() {
   );
 
   elements.content.innerHTML = `
-    <section class="info-banner">
-      <span class="info-banner-icon">i</span>
-      <div>
-        <strong>Daten werden geladen.</strong>
-        <span>
-          Dies kann einen kleinen Moment dauern.
-        </span>
-      </div>
-    </section>
 
     <section class="panel-card">
       <div class="skeleton skeleton-title"></div>
@@ -553,6 +564,39 @@ function setPageHeading(
 
   elements.pageDescription.textContent =
     description;
+
+  let loadingNote =
+    document.getElementById(
+      'headerLoadingNote'
+    );
+
+  if (!loadingNote) {
+    loadingNote =
+      document.createElement(
+        'span'
+      );
+
+    loadingNote.id =
+      'headerLoadingNote';
+
+    loadingNote.className =
+      'header-loading-note';
+
+    const heading =
+      elements.pageTitle
+        .closest(
+          '.page-heading'
+        );
+
+    if (heading) {
+      heading.appendChild(
+        loadingNote
+      );
+    }
+  }
+
+  loadingNote.textContent =
+    'Das Laden der Daten kann einen Moment dauern.';
 }
 
 function setConnection(

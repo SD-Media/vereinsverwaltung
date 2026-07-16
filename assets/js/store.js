@@ -443,112 +443,128 @@ export function addEntryOptimistic(
   listId,
   entry
 ) {
-  const result =
-    findListMutable_(
-      listId
-    );
-
-  if (!result) {
-    return;
-  }
-
-  if (
-    !Array.isArray(
-      result.list.eintragungen
-    )
-  ) {
-    result.list.eintragungen = [];
-  }
-
-  result.list.eintragungen.push(
-    entry
-  );
-
-  result.list.belegt =
-    result.list.eintragungen.length;
-
-  const maximum =
-    Number(
-      result.list.anzahl || 0
-    );
-
-  result.list.frei =
-    maximum > 0
-      ? Math.max(
-          maximum -
-            result.list.belegt,
-          0
-        )
-      : null;
-
-  result.list.voll =
-    maximum > 0 &&
-    result.list.belegt >=
-      maximum;
+  const result = findListMutable_(listId);
+  if (!result) return;
+  if (!Array.isArray(result.list.eintragungen)) result.list.eintragungen = [];
+  result.list.eintragungen.push(entry);
+  result.list.belegt = result.list.eintragungen.length;
+  const maximum = Number(result.list.anzahl || 0);
+  result.list.frei = maximum > 0 ? Math.max(maximum - result.list.belegt, 0) : null;
+  result.list.voll = maximum > 0 && result.list.belegt >= maximum;
+  updatePointsForAddedEntry_(entry, result.event, result.list);
 }
+
 
 /**
  * Entfernt eine Eintragung lokal.
  *
  * @param {string} entryId
  */
-export function removeEntryOptimistic(
-  entryId
-) {
-  for (
-    const event of
-    getAllEvents()
-  ) {
-    for (
-      const list of
-      (
-        event.listen || []
-      )
-    ) {
-      const entries =
-        list.eintragungen || [];
-
-      const index =
-        entries.findIndex(entry =>
-          entry.id ===
-          entryId
-        );
-
-      if (index < 0) {
-        continue;
-      }
-
-      entries.splice(
-        index,
-        1
-      );
-
-      list.belegt =
-        entries.length;
-
-      const maximum =
-        Number(
-          list.anzahl || 0
-        );
-
-      list.frei =
-        maximum > 0
-          ? Math.max(
-              maximum -
-                entries.length,
-              0
-            )
-          : null;
-
-      list.voll =
-        maximum > 0 &&
-        entries.length >=
-          maximum;
-
+export function removeEntryOptimistic(entryId) {
+  for (const event of getAllEvents()) {
+    for (const list of (event.listen || [])) {
+      const entries = list.eintragungen || [];
+      const index = entries.findIndex(entry => entry.id === entryId);
+      if (index < 0) continue;
+      const removedEntry = entries[index];
+      entries.splice(index, 1);
+      list.belegt = entries.length;
+      const maximum = Number(list.anzahl || 0);
+      list.frei = maximum > 0 ? Math.max(maximum - entries.length, 0) : null;
+      list.voll = maximum > 0 && entries.length >= maximum;
+      updatePointsForRemovedEntry_(removedEntry, list);
       return;
     }
   }
 }
+
+export function updatePointsConfigOptimistic(config) {
+  if (!state.frontendData) return;
+  if (!state.frontendData.einstellungen) state.frontendData.einstellungen = {};
+  Object.assign(state.frontendData.einstellungen, config);
+  if (!state.frontendData.punkte) {
+    state.frontendData.punkte = { konfiguration: {}, gesamtpunkte: 0, personen: [] };
+  }
+  state.frontendData.punkte.konfiguration = {
+    ...state.frontendData.punkte.konfiguration,
+    ...config
+  };
+  recalculateAllPointPersons_();
+}
+
+function updatePointsForAddedEntry_(entry, event, list) {
+  const pointsData = state.frontendData && state.frontendData.punkte;
+  if (!pointsData || !pointsData.konfiguration || pointsData.konfiguration.punkteAktiv !== true) return;
+  const name = String(entry.name || '').trim();
+  if (!name) return;
+  const points = Number(list.punkte || 0);
+  let person = (pointsData.personen || []).find(item => normalizeStorePersonName_(item.name) === normalizeStorePersonName_(name));
+  if (!person) {
+    person = {
+      name,
+      punkte: 0,
+      anzahlEintragungen: 0,
+      sollwert: Number(pointsData.konfiguration.sollwert || 0),
+      rest: 0,
+      sollwertErreicht: false,
+      status: 'offen',
+      details: []
+    };
+    pointsData.personen.push(person);
+  }
+  person.punkte = Number(person.punkte || 0) + points;
+  person.anzahlEintragungen = Number(person.anzahlEintragungen || 0) + 1;
+  if (!Array.isArray(person.details)) person.details = [];
+  person.details.push({
+    veranstaltung: event.titel || '',
+    veranstaltungId: event.id || '',
+    liste: list.titel || '',
+    listenId: list.id || '',
+    datum: list.datum || '',
+    uhrzeit: list.uhrzeit || '',
+    verantwortlich: list.verantwortlich || '',
+    punkte: points
+  });
+  pointsData.gesamtpunkte = Number(pointsData.gesamtpunkte || 0) + points;
+  recalculatePointPerson_(person, pointsData.konfiguration);
+}
+
+function updatePointsForRemovedEntry_(entry, list) {
+  const pointsData = state.frontendData && state.frontendData.punkte;
+  if (!pointsData || !Array.isArray(pointsData.personen)) return;
+  const person = pointsData.personen.find(item => normalizeStorePersonName_(item.name) === normalizeStorePersonName_(entry.name));
+  if (!person) return;
+  const points = Number(list.punkte || 0);
+  person.punkte = Math.max(0, Number(person.punkte || 0) - points);
+  person.anzahlEintragungen = Math.max(0, Number(person.anzahlEintragungen || 0) - 1);
+  if (Array.isArray(person.details)) {
+    const detailIndex = person.details.findIndex(detail => String(detail.listenId || '') === String(list.id || ''));
+    if (detailIndex >= 0) person.details.splice(detailIndex, 1);
+  }
+  pointsData.gesamtpunkte = Math.max(0, Number(pointsData.gesamtpunkte || 0) - points);
+  recalculatePointPerson_(person, pointsData.konfiguration || {});
+}
+
+function recalculateAllPointPersons_() {
+  const pointsData = state.frontendData && state.frontendData.punkte;
+  if (!pointsData || !Array.isArray(pointsData.personen)) return;
+  pointsData.personen.forEach(person => recalculatePointPerson_(person, pointsData.konfiguration || {}));
+}
+
+function recalculatePointPerson_(person, config) {
+  const target = config.sollwertAktiv ? Number(config.sollwert || 0) : 0;
+  const difference = Number(person.punkte || 0) - target;
+  person.sollwert = target;
+  person.rest = Math.max(0, -difference);
+  person.differenz = difference;
+  person.sollwertErreicht = !config.sollwertAktiv || difference >= 0;
+  person.status = person.sollwertErreicht ? 'erfüllt' : 'offen';
+}
+
+function normalizeStorePersonName_(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('de-DE');
+}
+
 
 function getEventGroups_() {
   if (

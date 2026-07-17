@@ -354,6 +354,14 @@ function renderAdminDashboard(
 
       <button
         type="button"
+        class="button button-secondary"
+        id="adminPrintCenterButton"
+      >
+        Druckcenter
+      </button>
+
+      <button
+        type="button"
         class="button button-primary"
         id="createEventButton"
       >
@@ -818,6 +826,21 @@ function bindAdminActions(
         openPointsConfigDialog(
           contentElement,
           options
+        )
+    );
+  }
+
+  const printCenterButton =
+    contentElement.querySelector(
+      '#adminPrintCenterButton'
+    );
+
+  if (printCenterButton) {
+    printCenterButton.addEventListener(
+      'click',
+      () =>
+        openPrintCenterDialog(
+          contentElement
         )
     );
   }
@@ -3746,6 +3769,308 @@ function findList(listId) {
   }
 
   return null;
+}
+
+
+function openPrintCenterDialog(
+  contentElement
+) {
+  const snapshot =
+    getStoreSnapshot();
+
+  const data =
+    snapshot.frontendData || {};
+
+  const pointsActive =
+    data.punkte &&
+    data.punkte.konfiguration &&
+    data.punkte.konfiguration.punkteAktiv === true;
+
+  const root =
+    contentElement.querySelector(
+      '#adminDialogRoot'
+    );
+
+  root.innerHTML = `
+    <div class="dialog-backdrop">
+      <section class="dialog-card print-center-dialog" role="dialog" aria-modal="true">
+        <div class="dialog-header">
+          <div>
+            <span class="eyebrow">Adminbereich</span>
+            <h2>Druckcenter</h2>
+          </div>
+
+          <button class="icon-button" type="button" data-close-print-center>×</button>
+        </div>
+
+        <p class="dialog-intro">
+          Wähle die gewünschte Übersicht. Anschließend öffnet sich eine druckoptimierte Ansicht.
+        </p>
+
+        <div class="print-center-options">
+          ${pointsActive
+            ? `
+              <button class="print-center-option" type="button" data-print-points>
+                <span class="print-center-option-icon">◉</span>
+                <span>
+                  <strong>Soll-/Ist-Liste</strong>
+                  <small>Punktestand aller verwendeten Namen im aktuellen Vereinsjahr</small>
+                </span>
+              </button>
+            `
+            : ''}
+
+          <button class="print-center-option" type="button" data-print-events>
+            <span class="print-center-option-icon">▤</span>
+            <span>
+              <strong>Veranstaltungen und Helfer</strong>
+              <small>Alle Veranstaltungen mit Listen, Einsätzen und eingetragenen Personen</small>
+            </span>
+          </button>
+        </div>
+
+        ${!pointsActive
+          ? `
+            <div class="admin-empty-note">
+              Die Soll-/Ist-Liste wird angezeigt, sobald das Punktesystem aktiviert ist.
+            </div>
+          `
+          : ''}
+      </section>
+    </div>
+  `;
+
+  root.querySelectorAll('[data-close-print-center]').forEach(button => {
+    button.addEventListener('click', () => {
+      root.innerHTML = '';
+    });
+  });
+
+  const pointsButton = root.querySelector('[data-print-points]');
+  if (pointsButton) {
+    pointsButton.addEventListener('click', () => printPointsOverview_(data));
+  }
+
+  root.querySelector('[data-print-events]').addEventListener('click', () => {
+    printEventsOverview_(data);
+  });
+}
+
+function printPointsOverview_(data) {
+  const points = data.punkte || {};
+  const configuration = points.konfiguration || {};
+  const label = configuration.punkteBezeichnung || 'Punkte';
+  const people = sortAdminPointsPeople(points.personen || [], 'name-asc');
+
+  const rows = people.length
+    ? people.map(person => {
+        const difference = Number(person.punkte || 0) - Number(person.sollwert || 0);
+        return `
+          <tr>
+            <td><strong>${escapeHtml(person.name)}</strong></td>
+            <td>${formatAdminPointsNumber(person.sollwert)}</td>
+            <td>${formatAdminPointsNumber(person.punkte)}</td>
+            <td>${difference > 0 ? '+' : ''}${formatAdminPointsNumber(difference)}</td>
+            <td>${escapeHtml(person.anzahlEintragungen || 0)}</td>
+            <td>${person.sollwertErreicht ? 'Erfüllt' : 'Offen'}</td>
+          </tr>
+        `;
+      }).join('')
+    : '<tr><td colspan="6">Noch keine Punkte-Eintragungen vorhanden.</td></tr>';
+
+  openPrintWindow_(
+    'Soll-/Ist-Liste',
+    `
+      <header class="print-document-header">
+        <h1>Soll-/Ist-Liste</h1>
+        <p>${escapeHtml(getPrintTenantName_(data))}</p>
+        <p>Aktuelles Vereinsjahr · Einheit: ${escapeHtml(label)}</p>
+      </header>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Soll</th>
+            <th>Ist</th>
+            <th>Differenz</th>
+            <th>Eintragungen</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `
+  );
+}
+
+function printEventsOverview_(data) {
+  const events = getAllEvents().slice().sort(compareEvents);
+  const settings = data.einstellungen || {};
+
+  const eventMarkup = events.length
+    ? events.map(event => renderPrintableEvent_(event, settings)).join('')
+    : '<p>Keine Veranstaltungen vorhanden.</p>';
+
+  openPrintWindow_(
+    'Veranstaltungen und Helfer',
+    `
+      <header class="print-document-header">
+        <h1>Veranstaltungen und Helfer</h1>
+        <p>${escapeHtml(getPrintTenantName_(data))}</p>
+        <p>Stand: ${escapeHtml(new Date().toLocaleString('de-DE'))}</p>
+      </header>
+
+      <main class="print-events">${eventMarkup}</main>
+    `
+  );
+}
+
+function renderPrintableEvent_(event, settings) {
+  const lists = (event.listen || []).slice().sort(compareLists);
+
+  return `
+    <section class="print-event-block">
+      <header class="print-event-header">
+        <div>
+          <span>Veranstaltung</span>
+          <h2>${escapeHtml(event.titel || 'Ohne Titel')}</h2>
+        </div>
+        <strong>${escapeHtml(event.startdatum || 'Ohne Datum')}</strong>
+      </header>
+
+      ${event.beschreibung ? `<p class="print-description">${escapeHtml(event.beschreibung)}</p>` : ''}
+
+      <dl class="print-event-meta">
+        ${event.enddatum ? `<div><dt>Enddatum</dt><dd>${escapeHtml(event.enddatum)}</dd></div>` : ''}
+        ${event.verantwortlich ? `<div><dt>Verantwortlich</dt><dd>${escapeHtml(event.verantwortlich)}</dd></div>` : ''}
+        <div><dt>Status</dt><dd>${escapeHtml(event.status || 'offen')}</dd></div>
+      </dl>
+
+      ${lists.length
+        ? lists.map(list => renderPrintableList_(list, settings)).join('')
+        : '<p class="print-empty">Keine Einsätze oder Listen vorhanden.</p>'}
+    </section>
+  `;
+}
+
+function renderPrintableList_(list, settings) {
+  const entries = Array.isArray(list.eintragungen) ? list.eintragungen : [];
+  const capacity = Number(list.anzahl || 0) > 0 ? Number(list.anzahl) : 'unbegrenzt';
+
+  return `
+    <section class="print-list-block">
+      <div class="print-list-heading">
+        <div>
+          <h3>${escapeHtml(list.titel || 'Ohne Titel')}</h3>
+          <p>${escapeHtml(list.kategorie || list.typ || 'Einsatz')}</p>
+        </div>
+        <div class="print-list-facts">
+          ${list.datum ? `<span>${escapeHtml(list.datum)}</span>` : ''}
+          ${list.uhrzeit ? `<span>${escapeHtml(list.uhrzeit)} Uhr</span>` : ''}
+          <span>${entries.length} / ${escapeHtml(capacity)} belegt</span>
+          ${settings.punkteAktiv === true ? `<span>${escapeHtml(list.punkte ?? 0)} ${escapeHtml(settings.punkteBezeichnung || 'Punkte')}</span>` : ''}
+        </div>
+      </div>
+
+      ${list.verantwortlich ? `<p><strong>Verantwortlich:</strong> ${escapeHtml(list.verantwortlich)}</p>` : ''}
+
+      ${entries.length
+        ? `
+          <table class="print-entry-table">
+            <thead><tr><th>Name</th><th>Beitrag / Menge</th><th>Bemerkung</th></tr></thead>
+            <tbody>
+              ${entries.map(entry => `
+                <tr>
+                  <td><strong>${escapeHtml(entry.name || '')}</strong></td>
+                  <td>${escapeHtml(formatPrintableContribution_(entry))}</td>
+                  <td>${escapeHtml(entry.bemerkung || '')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `
+        : '<p class="print-empty">Noch keine Eintragungen.</p>'}
+    </section>
+  `;
+}
+
+function formatPrintableContribution_(entry) {
+  const parts = [];
+  if (entry.beitrag) parts.push(String(entry.beitrag));
+  if (entry.menge !== '' && entry.menge !== null && entry.menge !== undefined) {
+    parts.push('Menge: ' + entry.menge);
+  }
+  return parts.join(' · ');
+}
+
+function getPrintTenantName_(data) {
+  return adminState.session && adminState.session.einrichtungsname
+    ? adminState.session.einrichtungsname
+    : data.einrichtungsname || 'Vereinsverwaltung';
+}
+
+function openPrintWindow_(title, body) {
+  const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+
+  if (!printWindow) {
+    window.alert('Das Druckfenster wurde vom Browser blockiert. Bitte Pop-ups für diese Seite erlauben.');
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(`<!DOCTYPE html>
+    <html lang="de">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>${escapeHtml(title)}</title>
+        <style>
+          @page { size: A4 portrait; margin: 14mm; }
+          * { box-sizing: border-box; }
+          body { margin: 0; color: #17201d; font-family: Arial, sans-serif; font-size: 10.5pt; line-height: 1.4; }
+          h1, h2, h3, p { margin-top: 0; }
+          .print-document-header { margin-bottom: 22px; padding-bottom: 12px; border-bottom: 2px solid #1f4b3f; }
+          .print-document-header h1 { margin-bottom: 4px; font-size: 22pt; }
+          .print-document-header p { margin: 2px 0; color: #53605b; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { padding: 7px 8px; border: 1px solid #ccd5d1; text-align: left; vertical-align: top; }
+          th { background: #edf3f0; font-size: 9pt; }
+          tr { break-inside: avoid; page-break-inside: avoid; }
+          .print-event-block { margin: 0 0 16px; padding: 12px; border: 1px solid #bdc9c4; border-radius: 8px; break-inside: avoid; page-break-inside: avoid; }
+          .print-event-block + .print-event-block { margin-top: 16px; }
+          .print-event-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 8px; }
+          .print-event-header span { color: #68716d; font-size: 8pt; font-weight: bold; letter-spacing: .08em; text-transform: uppercase; }
+          .print-event-header h2 { margin: 2px 0 0; font-size: 16pt; }
+          .print-description { margin-bottom: 10px; }
+          .print-event-meta { display: flex; flex-wrap: wrap; gap: 16px; margin: 0 0 12px; }
+          .print-event-meta div { display: flex; gap: 5px; }
+          .print-event-meta dt { font-weight: bold; }
+          .print-event-meta dd { margin: 0; }
+          .print-list-block { margin-top: 10px; padding-top: 10px; border-top: 1px solid #d8dfdc; break-inside: avoid; page-break-inside: avoid; }
+          .print-list-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 7px; }
+          .print-list-heading h3 { margin-bottom: 1px; font-size: 12pt; }
+          .print-list-heading p { margin: 0; color: #68716d; }
+          .print-list-facts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px 10px; font-size: 9pt; }
+          .print-entry-table { margin-top: 7px; font-size: 9pt; }
+          .print-empty { margin: 7px 0 0; color: #68716d; font-style: italic; }
+          @media screen {
+            body { max-width: 210mm; margin: 18px auto; padding: 14mm; box-shadow: 0 0 20px rgba(0,0,0,.12); }
+          }
+          @media print {
+            body { max-width: none; }
+          }
+        </style>
+      </head>
+      <body>${body}
+        <script>
+          window.addEventListener('load', function () {
+            window.setTimeout(function () { window.print(); }, 150);
+          });
+        <\/script>
+      </body>
+    </html>`);
+  printWindow.document.close();
 }
 
 function renderAdminPointsOverview(

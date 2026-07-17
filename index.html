@@ -20,9 +20,20 @@
 
   <title>Vereinsplattform</title>
 
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var spaTarget = params.get('spa');
+
+      if (spaTarget) {
+        window.history.replaceState(null, '', spaTarget);
+      }
+    }());
+  </script>
+
   <link
     rel="stylesheet"
-    href="./assets/css/app.css?v=2.2.0"
+    href="/vereinsverwaltung/assets/css/app.css"
   >
 </head>
 
@@ -73,8 +84,8 @@
         </a>
 
         <a
-          href="#overview"
-          data-route-link="overview"
+          href="#events"
+          data-route-link="events"
         >
           <span
             class="nav-icon"
@@ -84,7 +95,7 @@
           </span>
 
           <span>
-            Übersicht
+            Einsätze
           </span>
         </a>
 
@@ -207,7 +218,7 @@
 
         <div class="topbar-actions">
           <span class="version-badge">
-            Version 2.2
+            Version 2.0
           </span>
         </div>
       </header>
@@ -216,25 +227,6 @@
         id="pageContent"
         class="page-content"
       >
-        <section class="info-banner">
-          <span
-            class="info-banner-icon"
-            aria-hidden="true"
-          >
-            i
-          </span>
-
-          <div>
-            <strong>
-              Daten werden geladen.
-            </strong>
-
-            <span>
-              Dies kann einen kleinen Moment dauern.
-            </span>
-          </div>
-        </section>
-
         <section class="panel-card">
           <div class="skeleton skeleton-title"></div>
           <div class="skeleton"></div>
@@ -250,7 +242,7 @@
 
   <script
     type="module"
-    src="./assets/js/app.js?v=2.2.0"
+    src="/vereinsverwaltung/assets/js/app.js"
   ></script>
 </body>
 </html>

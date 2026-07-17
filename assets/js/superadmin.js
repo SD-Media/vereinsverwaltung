@@ -12,6 +12,11 @@ import {
 
 const STORAGE_KEY = 'vereinsverwaltung_superadmin_token';
 
+const tenantViewState = {
+  search: '',
+  sort: 'name-asc'
+};
+
 export async function renderSuperAdminApp(elements) {
   configurePlatformShell_(elements);
 
@@ -131,17 +136,68 @@ async function renderDashboard_(elements, token) {
           <h2>Vereine und Einrichtungen</h2>
         </div>
       </div>
-      <div class="superadmin-tenant-list">
-        ${tenants.length ? tenants.map(renderTenantCard_).join('') : `
-          <div class="admin-empty-note">
-            Noch keine Einrichtung vorhanden.
-          </div>
-        `}
+
+      <div class="superadmin-toolbar">
+        <label class="superadmin-search-field">
+          <span class="sr-only">Vereine durchsuchen</span>
+          <input
+            id="superadminTenantSearch"
+            class="search-input"
+            type="search"
+            value="${escapeHtml_(tenantViewState.search)}"
+            placeholder="Nach Name oder Kennung suchen …"
+            autocomplete="off"
+          >
+        </label>
+
+        <label class="filter-field superadmin-sort-field">
+          <span>Sortierung</span>
+          <select id="superadminTenantSort">
+            ${renderSortOption_('name-asc', 'A–Z')}
+            ${renderSortOption_('name-desc', 'Z–A')}
+            ${renderSortOption_('newest', 'Neueste zuerst')}
+            ${renderSortOption_('oldest', 'Älteste zuerst')}
+          </select>
+        </label>
       </div>
+
+      <div class="superadmin-result-summary" id="superadminResultSummary"></div>
+      <div class="superadmin-tenant-list" id="superadminTenantList"></div>
     </section>
 
     <div id="superadminDialogRoot"></div>
   `;
+
+  const searchInput = document.getElementById('superadminTenantSearch');
+  const sortSelect = document.getElementById('superadminTenantSort');
+
+  const renderTenantList = () => {
+    const visibleTenants = filterAndSortTenants_(tenants);
+    const list = document.getElementById('superadminTenantList');
+    const summary = document.getElementById('superadminResultSummary');
+
+    summary.textContent = tenantViewState.search
+      ? `${visibleTenants.length} von ${tenants.length} Einrichtungen gefunden`
+      : `${visibleTenants.length} ${visibleTenants.length === 1 ? 'Einrichtung' : 'Einrichtungen'}`;
+
+    list.innerHTML = visibleTenants.length
+      ? visibleTenants.map(renderTenantCard_).join('')
+      : `<div class="admin-empty-note">Keine passende Einrichtung gefunden.</div>`;
+
+    bindTenantCardActions_(elements, token, tenants);
+  };
+
+  searchInput.addEventListener('input', event => {
+    tenantViewState.search = event.target.value;
+    renderTenantList();
+  });
+
+  sortSelect.addEventListener('change', event => {
+    tenantViewState.sort = event.target.value;
+    renderTenantList();
+  });
+
+  renderTenantList();
 
   document
     .getElementById('createTenantButton')
@@ -158,30 +214,64 @@ async function renderDashboard_(elements, token) {
       }
     });
 
-  elements.content
-    .querySelectorAll('[data-open-tenant]')
-    .forEach(button => {
-      button.addEventListener('click', () => {
-        window.location.href = createTenantUrl(button.dataset.openTenant);
-      });
-    });
+}
 
-  elements.content
-    .querySelectorAll('[data-edit-tenant]')
-    .forEach(button => {
-      button.addEventListener('click', () => {
-        const tenant = tenants.find(item => item.tenant === button.dataset.editTenant);
-        openEditDialog_(elements, token, tenant);
-      });
+function bindTenantCardActions_(elements, token, tenants) {
+  elements.content.querySelectorAll('[data-open-tenant]').forEach(button => {
+    button.addEventListener('click', () => {
+      window.location.href = createTenantUrl(button.dataset.openTenant);
     });
+  });
 
-  elements.content
-    .querySelectorAll('[data-delete-tenant]')
-    .forEach(button => {
-      button.addEventListener('click', () => {
-        openDeleteDialog_(elements, token, button.dataset.deleteTenant);
-      });
+  elements.content.querySelectorAll('[data-edit-tenant]').forEach(button => {
+    button.addEventListener('click', () => {
+      const tenant = tenants.find(item => item.tenant === button.dataset.editTenant);
+      openEditDialog_(elements, token, tenant);
     });
+  });
+
+  elements.content.querySelectorAll('[data-delete-tenant]').forEach(button => {
+    button.addEventListener('click', () => {
+      openDeleteDialog_(elements, token, button.dataset.deleteTenant);
+    });
+  });
+}
+
+function filterAndSortTenants_(tenants) {
+  const query = String(tenantViewState.search || '').trim().toLocaleLowerCase('de');
+  const result = tenants.filter(tenant => {
+    if (!query) return true;
+    return `${tenant.name || ''} ${tenant.tenant || ''} ${tenant.status || ''}`
+      .toLocaleLowerCase('de')
+      .includes(query);
+  });
+
+  return result.sort((a, b) => {
+    if (tenantViewState.sort === 'name-desc') {
+      return String(b.name || b.tenant || '').localeCompare(String(a.name || a.tenant || ''), 'de');
+    }
+    if (tenantViewState.sort === 'newest') {
+      return tenantDateValue_(b.createdAt) - tenantDateValue_(a.createdAt);
+    }
+    if (tenantViewState.sort === 'oldest') {
+      return tenantDateValue_(a.createdAt) - tenantDateValue_(b.createdAt);
+    }
+    return String(a.name || a.tenant || '').localeCompare(String(b.name || b.tenant || ''), 'de');
+  });
+}
+
+function tenantDateValue_(value) {
+  const text = String(value || '').trim();
+  const german = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (german) {
+    return new Date(Number(german[3]), Number(german[2]) - 1, Number(german[1]), Number(german[4] || 0), Number(german[5] || 0), Number(german[6] || 0)).getTime();
+  }
+  const parsed = Date.parse(text);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function renderSortOption_(value, label) {
+  return `<option value="${value}" ${tenantViewState.sort === value ? 'selected' : ''}>${label}</option>`;
 }
 
 function renderTenantCard_(tenant) {

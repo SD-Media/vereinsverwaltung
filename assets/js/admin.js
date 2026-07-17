@@ -16,6 +16,10 @@ import {
 } from './auth.js';
 
 import {
+  invalidateArchiveCache
+} from './archive.js';
+
+import {
   getStoreSnapshot,
   refreshStore,
   getAllEvents,
@@ -3311,6 +3315,8 @@ async function archiveEvent(
       },
       getStoredToken()
     );
+
+    invalidateArchiveCache();
 
     refreshStore()
       .catch(error =>

@@ -887,14 +887,27 @@ function calculateStoreListOccupied_(
     );
 
   const quantityBased =
-    [
-      'kuchenliste',
-      'sachspende',
-      'sachspendenliste',
-      'freie-mitbringliste'
-    ].includes(
-      type
-    );
+    type !==
+      'helfereinsatz' ||
+    entries.some(entry => {
+      const quantity =
+        Number(
+          entry.menge
+        );
+
+      return (
+        String(
+          entry.beitrag || ''
+        ).trim() !==
+          '' ||
+        (
+          Number.isFinite(
+            quantity
+          ) &&
+          quantity > 1
+        )
+      );
+    });
 
   if (!quantityBased) {
     return entries.length;

@@ -3019,3 +3019,61 @@ a:focus-visible {
     display: flex;
   }
 }
+
+
+/* =========================================================
+   Schnellstart 3.2 – kompakter Hinweis im Seitenkopf
+   ========================================================= */
+
+.page-heading {
+  display: grid;
+  grid-template-columns:
+    minmax(0, auto)
+    minmax(0, auto);
+  column-gap: 12px;
+  row-gap: 3px;
+  align-items: center;
+}
+
+.page-heading h1 {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.page-heading p {
+  grid-column: 1;
+  margin: 0;
+}
+
+.header-loading-note {
+  grid-column: 2;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  font-size: 10px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+@media (max-width: 820px) {
+  .page-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .page-heading h1,
+  .page-heading p,
+  .header-loading-note {
+    grid-column: 1;
+  }
+
+  .header-loading-note {
+    margin-top: 3px;
+    white-space: normal;
+  }
+}

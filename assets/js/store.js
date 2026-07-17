@@ -882,16 +882,15 @@ function calculateStoreListOccupied_(
     list.eintragungen || [];
 
   const type =
-    String(
-      list.typ || ''
-    )
-      .trim()
-      .toLowerCase();
+    normalizeStoreListType_(
+      list.typ
+    );
 
   const quantityBased =
     [
       'kuchenliste',
       'sachspende',
+      'sachspendenliste',
       'freie-mitbringliste'
     ].includes(
       type
@@ -926,3 +925,19 @@ function calculateStoreListOccupied_(
   );
 }
 
+
+
+function normalizeStoreListType_(
+  value
+) {
+  return String(
+    value || ''
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[_\s]+/g, '-');
+}

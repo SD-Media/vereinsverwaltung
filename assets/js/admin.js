@@ -71,6 +71,18 @@ export async function renderAdminPage(
   adminState.session =
     session;
 
+  window.dispatchEvent(
+    new CustomEvent(
+      'admin-session-changed',
+      {
+        detail: {
+          loggedIn:
+            true
+        }
+      }
+    )
+  );
+
   startSessionRefresh();
 
   renderAdminDashboard(
@@ -168,6 +180,18 @@ function renderLogin(
           await login(
             form.elements.password.value
           );
+
+        window.dispatchEvent(
+          new CustomEvent(
+            'admin-session-changed',
+            {
+              detail: {
+                loggedIn:
+                  true
+              }
+            }
+          )
+        );
 
         startSessionRefresh();
 
@@ -275,6 +299,14 @@ function renderAdminDashboard(
     </section>
 
     <section class="admin-primary-actions">
+      <button
+        type="button"
+        class="button button-primary admin-points-action-button"
+        id="adminCategoryManagementButton"
+      >
+        Kategorien verwalten
+      </button>
+
       <button
         type="button"
         class="button button-primary admin-points-action-button"
@@ -698,12 +730,41 @@ function bindAdminActions(
       async () => {
         stopSessionRefresh();
         await logout();
+
+        window.dispatchEvent(
+          new CustomEvent(
+            'admin-session-changed',
+            {
+              detail: {
+                loggedIn:
+                  false
+              }
+            }
+          )
+        );
+
         renderLogin(
           contentElement,
           options
         );
       }
     );
+
+  const categoryManagementButton =
+    contentElement.querySelector(
+      '#adminCategoryManagementButton'
+    );
+
+  if (categoryManagementButton) {
+    categoryManagementButton.addEventListener(
+      'click',
+      () =>
+        openCategoryManagementDialog(
+          contentElement,
+          options
+        )
+    );
+  }
 
   const pointsConfigButton =
     contentElement.querySelector(
@@ -934,7 +995,507 @@ function bindAdminActions(
     });
 }
 
+async function openCategoryManagementDialog(
+  contentElement,
+  options
+) {
+  const root =
+    contentElement.querySelector(
+      '#adminDialogRoot'
+    );
+
+  root.innerHTML = `
+    <div class="dialog-backdrop">
+      <section
+        class="dialog-card category-management-dialog"
+        role="dialog"
+        aria-modal="true"
+      >
+        <header class="dialog-header">
+          <div>
+            <span class="eyebrow">
+              Einrichtungseinstellungen
+            </span>
+
+            <h2>Kategorien verwalten</h2>
+          </div>
+
+          <button
+            type="button"
+            class="icon-button"
+            data-admin-dialog-close
+          >
+            ×
+          </button>
+        </header>
+
+        <div class="category-management-loading">
+          Kategorien werden geladen …
+        </div>
+      </section>
+    </div>
+  `;
+
+  bindAdminSafeClose(
+    root,
+    () => false
+  );
+
+  try {
+    const categories =
+      await apiPost(
+        'allcategories',
+        {},
+        getStoredToken()
+      );
+
+    renderCategoryManagementContent(
+      root,
+      contentElement,
+      options,
+      categories
+    );
+  } catch (error) {
+    root.querySelector(
+      '.category-management-loading'
+    ).textContent =
+      error &&
+      error.message
+        ? error.message
+        : 'Die Kategorien konnten nicht geladen werden.';
+  }
+}
+
+function renderCategoryManagementContent(
+  root,
+  contentElement,
+  options,
+  categories
+) {
+  const sorted =
+    (
+      Array.isArray(
+        categories
+      )
+        ? categories
+        : []
+    )
+      .sort(
+        (a, b) =>
+          String(
+            a.bezeichnung || ''
+          ).localeCompare(
+            String(
+              b.bezeichnung || ''
+            ),
+            'de',
+            {
+              sensitivity:
+                'base'
+            }
+          )
+      );
+
+  const card =
+    root.querySelector(
+      '.category-management-dialog'
+    );
+
+  card.innerHTML = `
+    <header class="dialog-header">
+      <div>
+        <span class="eyebrow">
+          Einrichtungseinstellungen
+        </span>
+
+        <h2>Kategorien verwalten</h2>
+      </div>
+
+      <button
+        type="button"
+        class="icon-button"
+        data-admin-dialog-close
+      >
+        ×
+      </button>
+    </header>
+
+    <div class="category-management-layout">
+      <section class="category-list-panel">
+        <div class="category-list-heading">
+          <strong>Kategorien</strong>
+          <span>${sorted.length}</span>
+        </div>
+
+        <div class="category-management-list">
+          ${sorted.length
+            ? sorted.map(category => `
+                <button
+                  type="button"
+                  class="category-management-row"
+                  data-category-edit="${escapeHtml(category.id)}"
+                >
+                  <span
+                    class="category-color-dot"
+                    style="background:${escapeHtml(category.farbe)}"
+                  ></span>
+
+                  <span>
+                    <strong>${escapeHtml(category.bezeichnung)}</strong>
+                    <small>
+                      ${category.aktiv
+                        ? 'Aktiv'
+                        : 'Inaktiv'}
+                    </small>
+                  </span>
+                </button>
+              `).join('')
+            : `
+              <div class="admin-empty-child">
+                Noch keine Kategorien vorhanden.
+              </div>
+            `}
+        </div>
+      </section>
+
+      <form
+        id="categoryManagementForm"
+        class="category-editor-panel"
+      >
+        <input
+          name="id"
+          type="hidden"
+        >
+
+        <span class="eyebrow">
+          Kategorie
+        </span>
+
+        <h3 id="categoryEditorTitle">
+          Neue Kategorie
+        </h3>
+
+        <label class="form-field">
+          <span>Bezeichnung</span>
+
+          <input
+            name="bezeichnung"
+            type="text"
+            maxlength="80"
+            required
+            placeholder="Zum Beispiel Getränkestand"
+          >
+        </label>
+
+        <div class="category-color-grid">
+          <label class="form-field">
+            <span>Farbe</span>
+
+            <input
+              name="farbe"
+              type="color"
+              value="#546E7A"
+            >
+          </label>
+
+          <label class="form-field">
+            <span>Icon-Bezeichnung</span>
+
+            <input
+              name="icon"
+              type="text"
+              maxlength="80"
+              value="circle"
+              placeholder="circle"
+            >
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Status</span>
+
+          <select name="status">
+            <option value="aktiv">Aktiv</option>
+            <option value="inaktiv">Inaktiv</option>
+          </select>
+        </label>
+
+        <div
+          id="categoryManagementError"
+          class="form-error"
+          hidden
+        ></div>
+
+        <div class="category-editor-actions">
+          <button
+            type="button"
+            class="button button-secondary"
+            id="newCategoryButton"
+          >
+            Neue Kategorie
+          </button>
+
+          <button
+            type="button"
+            class="button button-danger"
+            id="deleteCategoryButton"
+            hidden
+          >
+            Löschen
+          </button>
+
+          <button
+            type="submit"
+            class="button button-primary"
+          >
+            Speichern
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  const form =
+    card.querySelector(
+      '#categoryManagementForm'
+    );
+
+  const errorBox =
+    card.querySelector(
+      '#categoryManagementError'
+    );
+
+  const deleteButton =
+    card.querySelector(
+      '#deleteCategoryButton'
+    );
+
+  const title =
+    card.querySelector(
+      '#categoryEditorTitle'
+    );
+
+  const resetForm =
+    () => {
+      form.reset();
+      form.elements.id.value =
+        '';
+      form.elements.farbe.value =
+        '#546E7A';
+      form.elements.icon.value =
+        'circle';
+      form.elements.status.value =
+        'aktiv';
+      title.textContent =
+        'Neue Kategorie';
+      deleteButton.hidden =
+        true;
+      errorBox.hidden =
+        true;
+    };
+
+  card
+    .querySelectorAll(
+      '[data-category-edit]'
+    )
+    .forEach(button => {
+      button.addEventListener(
+        'click',
+        () => {
+          const category =
+            sorted.find(item =>
+              item.id ===
+              button.dataset.categoryEdit
+            );
+
+          if (!category) {
+            return;
+          }
+
+          form.elements.id.value =
+            category.id;
+          form.elements.bezeichnung.value =
+            category.bezeichnung;
+          form.elements.farbe.value =
+            category.farbe;
+          form.elements.icon.value =
+            category.icon || 'circle';
+          form.elements.status.value =
+            category.status || 'aktiv';
+
+          title.textContent =
+            'Kategorie bearbeiten';
+
+          deleteButton.hidden =
+            false;
+
+          errorBox.hidden =
+            true;
+        }
+      );
+    });
+
+  card
+    .querySelector(
+      '#newCategoryButton'
+    )
+    .addEventListener(
+      'click',
+      resetForm
+    );
+
+  deleteButton.addEventListener(
+    'click',
+    async () => {
+      const id =
+        form.elements.id.value;
+
+      if (!id) {
+        return;
+      }
+
+      if (
+        !window.confirm(
+          'Soll diese Kategorie endgültig gelöscht werden? Das ist nur möglich, wenn sie nicht verwendet wird.'
+        )
+      ) {
+        return;
+      }
+
+      try {
+        await apiPost(
+          'deletecategory',
+          {
+            id:
+              id
+          },
+          getStoredToken()
+        );
+
+        const updated =
+          await apiPost(
+            'allcategories',
+            {},
+            getStoredToken()
+          );
+
+        await refreshStore();
+
+        renderCategoryManagementContent(
+          root,
+          contentElement,
+          options,
+          updated
+        );
+      } catch (error) {
+        errorBox.textContent =
+          error &&
+          error.message
+            ? error.message
+            : 'Die Kategorie konnte nicht gelöscht werden.';
+
+        errorBox.hidden =
+          false;
+      }
+    }
+  );
+
+  form.addEventListener(
+    'submit',
+    async event => {
+      event.preventDefault();
+
+      const id =
+        form.elements.id.value;
+
+      const payload = {
+        bezeichnung:
+          form.elements.bezeichnung.value.trim(),
+        farbe:
+          form.elements.farbe.value,
+        icon:
+          form.elements.icon.value.trim() ||
+          'circle',
+        status:
+          form.elements.status.value,
+        sortierung:
+          0
+      };
+
+      const submitButton =
+        form.querySelector(
+          '[type="submit"]'
+        );
+
+      submitButton.disabled =
+        true;
+
+      errorBox.hidden =
+        true;
+
+      try {
+        await apiPost(
+          id
+            ? 'updatecategory'
+            : 'createcategory',
+          id
+            ? {
+                id:
+                  id,
+                data:
+                  payload
+              }
+            : {
+                data:
+                  payload
+              },
+          getStoredToken()
+        );
+
+        const updated =
+          await apiPost(
+            'allcategories',
+            {},
+            getStoredToken()
+          );
+
+        await refreshStore();
+
+        renderAdminDashboard(
+          contentElement,
+          options
+        );
+
+        renderCategoryManagementContent(
+          root,
+          contentElement,
+          options,
+          updated
+        );
+      } catch (error) {
+        errorBox.textContent =
+          error &&
+          error.message
+            ? error.message
+            : 'Die Kategorie konnte nicht gespeichert werden.';
+
+        errorBox.hidden =
+          false;
+
+        submitButton.disabled =
+          false;
+      }
+    }
+  );
+
+  bindAdminSafeClose(
+    root,
+    () => false
+  );
+}
+
 function openPointsConfigDialog(
+
   contentElement,
   options
 ) {

@@ -3788,3 +3788,194 @@ a:focus-visible {
     flex: 1 1 auto;
   }
 }
+
+
+/* =========================================================
+   Modul: Superadmin-Zentrale
+   ========================================================= */
+
+.platform-app .main-shell {
+  margin-left: 0;
+}
+
+.platform-app .topbar {
+  padding-left: max(34px, calc((100vw - 1380px) / 2 + 34px));
+  padding-right: max(34px, calc((100vw - 1380px) / 2 + 34px));
+}
+
+.superadmin-login-shell {
+  display: grid;
+  min-height: calc(100vh - 150px);
+  place-items: center;
+}
+
+.superadmin-login-card {
+  width: min(480px, 100%);
+  padding: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: 26px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.superadmin-login-icon {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  margin-bottom: 22px;
+  border-radius: 20px;
+  color: #fff;
+  background: var(--color-primary);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.superadmin-login-card h1,
+.superadmin-header-card h1 {
+  margin: 8px 0 0;
+  letter-spacing: -0.045em;
+}
+
+.superadmin-login-card p {
+  margin: 12px 0 0;
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+
+.superadmin-header-card {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 30px;
+  border-radius: var(--radius-lg);
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary-strong), var(--color-primary));
+  box-shadow: var(--shadow-md);
+}
+
+.superadmin-header-card p {
+  margin: 9px 0 0;
+  color: rgba(255,255,255,.75);
+}
+
+.superadmin-header-actions,
+.superadmin-tenant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.superadmin-header-card .button-primary {
+  color: var(--color-primary-strong);
+  background: #fff;
+}
+
+.superadmin-header-card .button-secondary {
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.12);
+}
+
+.superadmin-tenant-panel {
+  margin-top: 18px;
+}
+
+.superadmin-tenant-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.superadmin-tenant-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 17px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-muted);
+}
+
+.superadmin-tenant-main {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+}
+
+.superadmin-tenant-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 15px;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  font-weight: 700;
+}
+
+.superadmin-tenant-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.superadmin-tenant-title-row h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.superadmin-tenant-main p {
+  margin: 5px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.button-danger {
+  color: #fff;
+  background: var(--color-danger);
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.checkbox-field input {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 760px) {
+  .platform-app .topbar {
+    padding: 14px 18px;
+  }
+
+  .superadmin-header-card,
+  .superadmin-tenant-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .superadmin-header-actions,
+  .superadmin-tenant-actions {
+    width: 100%;
+  }
+
+  .superadmin-header-actions .button,
+  .superadmin-tenant-actions .button {
+    flex: 1;
+  }
+
+  .superadmin-login-card {
+    padding: 28px 22px;
+  }
+}

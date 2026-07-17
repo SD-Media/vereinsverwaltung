@@ -492,7 +492,10 @@ function renderList(
 
         ${hasLimit
           ? occupancyMarkup(
-              entries.length,
+              calculateDisplayedOccupied_(
+                list,
+                entries
+              ),
               Number(list.anzahl)
             )
           : `
@@ -1077,6 +1080,88 @@ function bindSafeDialogClose(
         }
       );
     });
+}
+
+function calculateDisplayedOccupied_(
+  list,
+  entries
+) {
+  const backendValue =
+    Number(
+      list.belegt
+    );
+
+  if (
+    Number.isFinite(
+      backendValue
+    ) &&
+    backendValue >= 0
+  ) {
+    return backendValue;
+  }
+
+  const type =
+    String(
+      list.typ || ''
+    )
+      .trim()
+      .toLowerCase()
+      .replace(/ä/g, 'ae')
+      .replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue')
+      .replace(/ß/g, 'ss')
+      .replace(/[_\s]+/g, '-');
+
+  const quantityBased =
+    type !==
+      'helfereinsatz' ||
+    entries.some(entry => {
+      const quantity =
+        Number(
+          entry.menge
+        );
+
+      return (
+        String(
+          entry.beitrag || ''
+        ).trim() !==
+          '' ||
+        (
+          Number.isFinite(
+            quantity
+          ) &&
+          quantity > 1
+        )
+      );
+    });
+
+  if (!quantityBased) {
+    return entries.length;
+  }
+
+  return entries.reduce(
+    (sum, entry) => {
+      const quantity =
+        Number(
+          entry.menge
+        );
+
+      return (
+        sum +
+        (
+          Number.isFinite(
+            quantity
+          ) &&
+          quantity > 0
+            ? Math.floor(
+                quantity
+              )
+            : 1
+        )
+      );
+    },
+    0
+  );
 }
 
 function occupancyMarkup(

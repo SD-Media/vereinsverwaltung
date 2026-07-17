@@ -3979,3 +3979,98 @@ a:focus-visible {
     padding: 28px 22px;
   }
 }
+
+/* Version 2.2 – Superadmin-Filter und Druckcenter */
+.superadmin-toolbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(190px, 240px);
+  gap: 14px;
+  align-items: end;
+  margin-top: 20px;
+}
+
+.superadmin-search-field {
+  display: block;
+}
+
+.superadmin-sort-field {
+  margin: 0;
+}
+
+.superadmin-result-summary {
+  margin-top: 12px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.print-center-dialog {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.dialog-intro {
+  margin: 0 0 18px;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.print-center-options {
+  display: grid;
+  gap: 12px;
+}
+
+.print-center-option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 15px;
+  padding: 17px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.print-center-option:hover {
+  border-color: rgba(31, 75, 63, 0.35);
+  background: var(--color-primary-soft);
+  transform: translateY(-1px);
+}
+
+.print-center-option-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 14px;
+  color: var(--color-primary);
+  background: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+.print-center-option strong,
+.print-center-option small {
+  display: block;
+}
+
+.print-center-option strong {
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.print-center-option small {
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .superadmin-toolbar {
+    grid-template-columns: 1fr;
+  }
+}

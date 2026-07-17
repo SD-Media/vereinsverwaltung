@@ -3980,7 +3980,7 @@ a:focus-visible {
   }
 }
 
-/* Version 2.2 – Superadmin-Filter und Druckcenter */
+/* Version 2.2 – Superadmin-Filter */
 .superadmin-toolbar {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) minmax(190px, 240px);
@@ -4004,73 +4004,207 @@ a:focus-visible {
   font-weight: 600;
 }
 
-.print-center-dialog {
-  width: min(680px, calc(100vw - 32px));
-}
-
-.dialog-intro {
-  margin: 0 0 18px;
-  color: var(--color-muted);
-  line-height: 1.6;
-}
-
-.print-center-options {
-  display: grid;
+.admin-points-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-end;
   gap: 12px;
 }
 
-.print-center-option {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 15px;
-  padding: 17px;
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  color: var(--color-text);
-  background: var(--color-surface-muted);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
-}
-
-.print-center-option:hover {
-  border-color: rgba(31, 75, 63, 0.35);
-  background: var(--color-primary-soft);
-  transform: translateY(-1px);
-}
-
-.print-center-option-icon {
-  display: grid;
-  width: 46px;
-  height: 46px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 14px;
-  color: var(--color-primary);
-  background: #fff;
-  font-size: 20px;
-  font-weight: 700;
-  box-shadow: var(--shadow-sm);
-}
-
-.print-center-option strong,
-.print-center-option small {
-  display: block;
-}
-
-.print-center-option strong {
-  margin-bottom: 4px;
-  font-size: 15px;
-}
-
-.print-center-option small {
-  color: var(--color-muted);
-  line-height: 1.45;
+.admin-print-root {
+  display: none;
 }
 
 @media (max-width: 760px) {
   .superadmin-toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .admin-points-header-actions {
+    width: 100%;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .admin-points-header-actions .button,
+  .admin-points-header-actions .filter-field {
+    width: 100%;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm;
+  }
+
+  body.is-admin-printing {
+    min-height: auto;
+    color: #17201d;
+    background: #ffffff;
+    font-family: Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.4;
+  }
+
+  body.is-admin-printing > *:not(.admin-print-root) {
+    display: none !important;
+  }
+
+  body.is-admin-printing .admin-print-root {
+    display: block !important;
+    width: 100%;
+  }
+
+  .admin-print-root,
+  .admin-print-root * {
+    box-sizing: border-box;
+  }
+
+  .admin-print-root h1,
+  .admin-print-root h2,
+  .admin-print-root h3,
+  .admin-print-root p {
+    margin-top: 0;
+  }
+
+  .admin-print-root .print-document-header {
+    margin-bottom: 22px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #1f4b3f;
+  }
+
+  .admin-print-root .print-document-header h1 {
+    margin-bottom: 4px;
+    font-size: 22pt;
+  }
+
+  .admin-print-root .print-document-header p {
+    margin: 2px 0;
+    color: #53605b;
+  }
+
+  .admin-print-root table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .admin-print-root th,
+  .admin-print-root td {
+    padding: 7px 8px;
+    border: 1px solid #ccd5d1;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .admin-print-root th {
+    background: #edf3f0 !important;
+    font-size: 9pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .admin-print-root tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .admin-print-root .print-event-block {
+    margin: 0 0 16px;
+    padding: 12px;
+    border: 1px solid #bdc9c4;
+    border-radius: 8px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .admin-print-root .print-event-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 8px;
+  }
+
+  .admin-print-root .print-event-header span {
+    color: #68716d;
+    font-size: 8pt;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .admin-print-root .print-event-header h2 {
+    margin: 2px 0 0;
+    font-size: 16pt;
+  }
+
+  .admin-print-root .print-description {
+    margin-bottom: 10px;
+  }
+
+  .admin-print-root .print-event-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 0 0 12px;
+  }
+
+  .admin-print-root .print-event-meta div {
+    display: flex;
+    gap: 5px;
+  }
+
+  .admin-print-root .print-event-meta dt {
+    font-weight: bold;
+  }
+
+  .admin-print-root .print-event-meta dd {
+    margin: 0;
+  }
+
+  .admin-print-root .print-list-block {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #d8dfdc;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .admin-print-root .print-list-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 7px;
+  }
+
+  .admin-print-root .print-list-heading h3 {
+    margin-bottom: 1px;
+    font-size: 12pt;
+  }
+
+  .admin-print-root .print-list-heading p {
+    margin: 0;
+    color: #68716d;
+  }
+
+  .admin-print-root .print-list-facts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px 10px;
+    font-size: 9pt;
+  }
+
+  .admin-print-root .print-entry-table {
+    margin-top: 7px;
+    font-size: 9pt;
+  }
+
+  .admin-print-root .print-empty {
+    margin: 7px 0 0;
+    color: #68716d;
+    font-style: italic;
   }
 }

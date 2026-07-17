@@ -80,10 +80,17 @@ document.addEventListener(
 );
 
 async function initialize() {
-  const appContext = resolveAppContext();
+  const appContext =
+    resolveAppContext();
 
-  if (appContext.mode === 'platform') {
-    await renderSuperAdminApp(elements);
+  if (
+    appContext.mode ===
+    'platform'
+  ) {
+    await renderSuperAdminApp(
+      elements
+    );
+
     return;
   }
 
@@ -106,7 +113,9 @@ async function initialize() {
       : 'Verbindung wird geprüft'
   );
 
-  if (hasCachedData) {
+  if (
+    hasCachedData
+  ) {
     applyTenantConfiguration();
     await renderCurrentPage();
   } else {
@@ -115,8 +124,7 @@ async function initialize() {
 
   try {
     await loadStore({
-      force:
-        true
+      force: true
     });
 
     applyTenantConfiguration();
@@ -134,7 +142,9 @@ async function initialize() {
      */
     refreshInBackground();
   } catch (error) {
-    if (hasCachedData) {
+    if (
+      hasCachedData
+    ) {
       setConnection(
         'online',
         'Letzter Stand'
@@ -153,7 +163,9 @@ async function initialize() {
       'Keine Verbindung'
     );
 
-    renderError(error);
+    renderError(
+      error
+    );
   }
 }
 
@@ -164,22 +176,23 @@ function bindAdminSessionNavigation() {
       setArchiveNavigationVisibility(
         event &&
         event.detail &&
-        event.detail.loggedIn ===
-          true
+        event.detail.loggedIn === true
       );
     }
   );
 
   validateSession()
-    .then(session =>
-      setArchiveNavigationVisibility(
-        Boolean(
-          session
+    .then(
+      session =>
+        setArchiveNavigationVisibility(
+          Boolean(
+            session
+          )
         )
-      )
     )
-    .catch(() =>
-      hideArchiveNavigation()
+    .catch(
+      () =>
+        hideArchiveNavigation()
     );
 }
 
@@ -202,7 +215,9 @@ function setArchiveNavigationVisibility(
       '[data-route-link="admin"]'
     );
 
-  if (!archiveLink) {
+  if (
+    !archiveLink
+  ) {
     return;
   }
 
@@ -231,20 +246,22 @@ function bindNavigation() {
     .querySelectorAll(
       '[data-route-link]'
     )
-    .forEach(link => {
-      link.addEventListener(
-        'click',
-        event => {
-          event.preventDefault();
+    .forEach(
+      link => {
+        link.addEventListener(
+          'click',
+          event => {
+            event.preventDefault();
 
-          navigate(
-            link.dataset.routeLink
-          );
+            navigate(
+              link.dataset.routeLink
+            );
 
-          closeMobileNavigation();
-        }
-      );
-    });
+            closeMobileNavigation();
+          }
+        );
+      }
+    );
 
   elements.mobileMenuButton
     .addEventListener(
@@ -265,6 +282,23 @@ function registerRoutes() {
     renderDashboard
   );
 
+  /*
+   * Aktuelle Menüroute der Einsatzübersicht.
+   */
+  registerRoute(
+    'events',
+    () =>
+      renderOverviewPage({
+        contentElement:
+          elements.content,
+        setPageHeading
+      })
+  );
+
+  /*
+   * Bestehende ältere Links mit #overview
+   * bleiben weiterhin funktionsfähig.
+   */
   registerRoute(
     'overview',
     () =>
@@ -279,7 +313,8 @@ function registerRoutes() {
     'mine',
     () =>
       renderPointsPage({
-        contentElement: elements.content,
+        contentElement:
+          elements.content,
         setPageHeading
       })
   );
@@ -313,7 +348,6 @@ function registerRoutes() {
         setPageHeading
       })
   );
-
 }
 
 async function renderCurrentPage() {
@@ -321,6 +355,7 @@ async function renderCurrentPage() {
     getCurrentRoute();
 
   if (
+    route === 'events' ||
     route === 'overview'
   ) {
     return renderOverviewPage({
@@ -344,7 +379,8 @@ async function renderCurrentPage() {
     route === 'mine'
   ) {
     return renderPointsPage({
-      contentElement: elements.content,
+      contentElement:
+        elements.content,
       setPageHeading
     });
   }
@@ -384,7 +420,10 @@ async function refreshInBackground() {
      * vollständig neu aufbauen. Geöffnete Dialoge und Formulare
      * bleiben dadurch unangetastet.
      */
-    if (getCurrentRoute() !== 'admin') {
+    if (
+      getCurrentRoute() !==
+      'admin'
+    ) {
       await renderCurrentPage();
     }
   } catch (error) {
@@ -436,13 +475,45 @@ function applyTenantConfiguration() {
       );
   }
 
-  const mineLink = document.querySelector('[data-route-link="mine"]');
-  if (mineLink) mineLink.hidden = settings.punkteAktiv !== true;
-  const separatePointsLink = document.querySelector('[data-route-link="points"]');
-  if (separatePointsLink) separatePointsLink.hidden = true;
-  document.querySelectorAll('[data-points-only]').forEach(element => {
-    if (element !== separatePointsLink) element.hidden = settings.punkteAktiv !== true;
-  });
+  const mineLink =
+    document.querySelector(
+      '[data-route-link="mine"]'
+    );
+
+  if (
+    mineLink
+  ) {
+    mineLink.hidden =
+      settings.punkteAktiv !== true;
+  }
+
+  const separatePointsLink =
+    document.querySelector(
+      '[data-route-link="points"]'
+    );
+
+  if (
+    separatePointsLink
+  ) {
+    separatePointsLink.hidden =
+      true;
+  }
+
+  document
+    .querySelectorAll(
+      '[data-points-only]'
+    )
+    .forEach(
+      element => {
+        if (
+          element !==
+          separatePointsLink
+        ) {
+          element.hidden =
+            settings.punkteAktiv !== true;
+        }
+      }
+    );
 }
 
 function renderDashboard() {
@@ -457,7 +528,9 @@ function renderDashboard() {
     'Alles Wichtige auf einen Blick'
   );
 
-  if (!data) {
+  if (
+    !data
+  ) {
     renderInitialLoadingNotice();
     return;
   }
@@ -473,8 +546,9 @@ function renderDashboard() {
 
   const nextEvent =
     events
-      .filter(event =>
-        event.startdatum
+      .filter(
+        event =>
+          event.startdatum
       )
       .sort(
         (a, b) =>
@@ -510,12 +584,18 @@ function renderDashboard() {
         </h2>
 
         <p>
-          ${nextEvent
-            ? 'Nächste Veranstaltung: ' +
-              escapeHtml(nextEvent.titel) +
-              ' am ' +
-              escapeHtml(nextEvent.startdatum)
-            : 'Aktuell ist keine kommende Veranstaltung hinterlegt.'}
+          ${
+            nextEvent
+              ? 'Nächste Veranstaltung: ' +
+                escapeHtml(
+                  nextEvent.titel
+                ) +
+                ' am ' +
+                escapeHtml(
+                  nextEvent.startdatum
+                )
+              : 'Aktuell ist keine kommende Veranstaltung hinterlegt.'
+          }
         </p>
       </div>
 
@@ -590,7 +670,9 @@ function renderPlaceholder(
   `;
 }
 
-function renderError(error) {
+function renderError(
+  error
+) {
   setPageHeading(
     'Verbindungsproblem',
     'Das Backend konnte nicht geladen werden'
@@ -672,7 +754,9 @@ function setPageHeading(
       'headerLoadingNote'
     );
 
-  if (!loadingNote) {
+  if (
+    !loadingNote
+  ) {
     loadingNote =
       document.createElement(
         'span'
@@ -690,7 +774,9 @@ function setPageHeading(
           '.page-heading'
         );
 
-    if (heading) {
+    if (
+      heading
+    ) {
       heading.appendChild(
         loadingNote
       );
@@ -730,7 +816,9 @@ function toggleMobileNavigation() {
   elements.mobileMenuButton
     .setAttribute(
       'aria-expanded',
-      String(isOpen)
+      String(
+        isOpen
+      )
     );
 }
 
@@ -751,26 +839,55 @@ function closeMobileNavigation() {
     );
 }
 
-function parseDate(value) {
+function parseDate(
+  value
+) {
   const match =
     /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(
-      String(value || '')
+      String(
+        value || ''
+      )
     );
 
   return match
     ? new Date(
-        Number(match[3]),
-        Number(match[2]) - 1,
-        Number(match[1])
+        Number(
+          match[3]
+        ),
+        Number(
+          match[2]
+        ) - 1,
+        Number(
+          match[1]
+        )
       ).getTime()
     : Number.MAX_SAFE_INTEGER;
 }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+function escapeHtml(
+  value
+) {
+  return String(
+    value ?? ''
+  )
+    .replace(
+      /&/g,
+      '&amp;'
+    )
+    .replace(
+      /</g,
+      '&lt;'
+    )
+    .replace(
+      />/g,
+      '&gt;'
+    )
+    .replace(
+      /"/g,
+      '&quot;'
+    )
+    .replace(
+      /'/g,
+      '&#039;'
+    );
 }

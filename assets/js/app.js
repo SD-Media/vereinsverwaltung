@@ -105,6 +105,12 @@ async function initialize() {
     );
 
     await renderCurrentPage();
+
+    /*
+     * Punkte und weitere vollständige Daten werden erst geladen,
+     * nachdem die sichtbare Oberfläche bereits bereitsteht.
+     */
+    refreshInBackground();
   } catch (error) {
     if (hasCachedData) {
       setConnection(

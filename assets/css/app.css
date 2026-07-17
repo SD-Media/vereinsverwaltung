@@ -3570,3 +3570,118 @@ a:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* =========================================================
+   Korrekturen 3.5
+   ========================================================= */
+
+.admin-sub-navigation {
+  margin-left: 14px;
+  width: calc(100% - 14px);
+  border-left: 2px solid var(--color-primary-soft);
+}
+
+.form-grid-three {
+  align-items: start;
+}
+
+.form-grid-three > .form-field,
+.form-grid-three > .quantity-field-group {
+  min-width: 0;
+}
+
+.form-grid-three > .form-field > span,
+.form-grid-three > .quantity-field-group > .form-field > span {
+  display: flex;
+  min-height: 34px;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.form-grid-three input,
+.form-grid-three select {
+  min-height: 48px;
+}
+
+.quantity-field-group {
+  align-content: start;
+}
+
+.quantity-field-group .checkbox-field {
+  margin-top: 4px;
+}
+
+.category-management-dialog {
+  width: min(1080px, calc(100vw - 48px));
+  max-width: 1080px;
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+}
+
+.category-management-dialog .dialog-header {
+  flex: 0 0 auto;
+}
+
+.category-management-layout {
+  min-height: 560px;
+  max-height: calc(100vh - 150px);
+  grid-template-columns:
+    minmax(320px, 0.85fr)
+    minmax(440px, 1.15fr);
+  overflow: hidden;
+}
+
+.category-list-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.category-management-list {
+  max-height: none;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.category-editor-panel {
+  align-self: stretch;
+  align-content: start;
+}
+
+.category-color-picker {
+  display: grid;
+  grid-template-columns:
+    90px
+    minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.category-color-picker input[type="color"] {
+  width: 90px;
+  min-height: 52px;
+}
+
+.category-color-picker span {
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .category-management-dialog {
+    width: min(720px, calc(100vw - 24px));
+  }
+
+  .category-management-layout {
+    min-height: 0;
+    max-height: calc(100vh - 120px);
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .category-management-list {
+    max-height: 300px;
+  }
+}

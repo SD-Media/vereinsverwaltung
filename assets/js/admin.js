@@ -434,6 +434,15 @@ function renderAdminEventCard(
         >
           <button
             type="button"
+            class="icon-action archive-action"
+            title="Veranstaltung archivieren"
+            data-admin-archive-event="${escapeHtml(event.id)}"
+          >
+            ◰
+          </button>
+
+          <button
+            type="button"
             class="icon-action"
             title="Veranstaltung kopieren"
             data-admin-copy-event="${escapeHtml(event.id)}"
@@ -856,6 +865,22 @@ function bindAdminActions(
             contentElement,
             options,
             button.dataset.adminDeleteList
+          )
+      );
+    });
+
+  contentElement
+    .querySelectorAll(
+      '[data-admin-archive-event]'
+    )
+    .forEach(button => {
+      button.addEventListener(
+        'click',
+        () =>
+          archiveEvent(
+            contentElement,
+            options,
+            button.dataset.adminArchiveEvent
           )
       );
     });
@@ -2247,6 +2272,67 @@ async function deleteList(
       error.message
         ? error.message
         : 'Der Einsatz konnte nicht gelöscht werden.'
+    );
+  }
+}
+
+async function archiveEvent(
+  contentElement,
+  options,
+  eventId
+) {
+  if (
+    !window.confirm(
+      'Soll diese Veranstaltung einschließlich aller verbundenen Einsätze, Listen und Eintragungen archiviert werden? Sie kann später im Archiv vollständig wiederhergestellt werden.'
+    )
+  ) {
+    return;
+  }
+
+  const backup =
+    createStoreBackup();
+
+  removeEventOptimistic(
+    eventId
+  );
+
+  renderAdminDashboard(
+    contentElement,
+    options
+  );
+
+  try {
+    await apiPost(
+      'archiveevent',
+      {
+        id:
+          eventId
+      },
+      getStoredToken()
+    );
+
+    refreshStore()
+      .catch(error =>
+        console.warn(
+          'Die Übersicht konnte nach der Archivierung nicht sofort aktualisiert werden.',
+          error
+        )
+      );
+  } catch (error) {
+    restoreStoreBackup(
+      backup
+    );
+
+    renderAdminDashboard(
+      contentElement,
+      options
+    );
+
+    window.alert(
+      error &&
+      error.message
+        ? error.message
+        : 'Die Veranstaltung konnte nicht archiviert werden.'
     );
   }
 }

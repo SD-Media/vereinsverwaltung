@@ -70,16 +70,6 @@ function renderOverview(
     );
 
   contentElement.innerHTML = `
-    <section class="info-banner">
-      <span class="info-banner-icon" aria-hidden="true">i</span>
-      <div>
-        <strong>Daten werden geladen und aktualisiert.</strong>
-        <span>
-          Dies kann beim ersten Öffnen einen kleinen Moment dauern.
-        </span>
-      </div>
-    </section>
-
     <section class="events-toolbar panel-card">
       <div class="events-search-wrap">
         <label class="sr-only" for="overviewSearch">
@@ -1458,16 +1448,6 @@ function showToast(
 
 function createLoadingMarkup() {
   return `
-    <section class="info-banner">
-      <span class="info-banner-icon">i</span>
-      <div>
-        <strong>Daten werden geladen.</strong>
-        <span>
-          Dies kann einen kleinen Moment dauern.
-        </span>
-      </div>
-    </section>
-
     <section class="panel-card">
       <div class="skeleton skeleton-title"></div>
       <div class="skeleton"></div>

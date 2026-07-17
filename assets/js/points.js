@@ -19,8 +19,8 @@ export function renderPointsPage(
   } = options;
 
   setPageHeading(
-    'Meine Einsätze',
-    'Persönliche Einsätze und Soll-Ist-Stand prüfen'
+    'Meine Eintragungen',
+    'Persönliche Eintragungen und Soll-Ist-Stand prüfen'
   );
 
   const data =
@@ -266,7 +266,7 @@ function renderPersonalResult(
         : ''}
 
       <div class="points-detail-list">
-        <h3>Berücksichtigte Einsätze und Listen</h3>
+        <h3>Berücksichtigte Listen</h3>
 
         ${result.details &&
           result.details.length
@@ -302,7 +302,7 @@ function renderPointDetail(detail, label) {
   const date = detail.datum || (list ? list.datum : '');
   const time = detail.uhrzeit || (list ? list.uhrzeit : '');
   const responsible = detail.verantwortlich || (list ? list.verantwortlich : '');
-  return `<div class="points-detail-row"><div><strong>${escapeHtml(detail.veranstaltung || 'Veranstaltung')}</strong><span class="points-detail-title">${escapeHtml(detail.liste || 'Einsatz')}</span><div class="points-detail-meta">${date ? `<span>${escapeHtml(date)}</span>` : ''}${time ? `<span>${escapeHtml(time)} Uhr</span>` : ''}${responsible ? `<span>Verantwortlich: ${escapeHtml(responsible)}</span>` : ''}</div></div><strong>${formatNumber(detail.punkte)} ${escapeHtml(label)}</strong></div>`;
+  return `<div class="points-detail-row"><div><strong>${escapeHtml(detail.veranstaltung || 'Veranstaltung')}</strong><span class="points-detail-title">${escapeHtml(detail.liste || 'Liste')}</span><div class="points-detail-meta">${date ? `<span>${escapeHtml(date)}</span>` : ''}${time ? `<span>${escapeHtml(time)} Uhr</span>` : ''}${responsible ? `<span>Verantwortlich: ${escapeHtml(responsible)}</span>` : ''}</div></div><strong>${formatNumber(detail.punkte)} ${escapeHtml(label)}</strong></div>`;
 }
 
 function findPointListDetails_(detail) {

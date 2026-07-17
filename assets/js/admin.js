@@ -3,7 +3,8 @@
  */
 
 import {
-  apiPost
+  apiPost,
+  getTenant
 } from './api.js';
 
 import {
@@ -38,6 +39,9 @@ const adminState = {
   pointsSort:
     'name-asc'
 };
+
+const ADMIN_GUIDE_STORAGE_PREFIX =
+  'vereinsplattform_admin_guide_seen_';
 
 export async function renderAdminPage(
   options
@@ -200,6 +204,10 @@ function renderLogin(
           contentElement,
           options
         );
+
+        showAdminGuideAfterFirstLogin(
+          contentElement
+        );
       } catch (error) {
         errorBox.textContent =
           error &&
@@ -289,13 +297,23 @@ function renderAdminDashboard(
           )}
         </div>
 
-        <button
-          type="button"
-          class="button admin-logout-button"
-          id="adminLogoutButton"
-        >
-          Abmelden
-        </button>
+        <div class="admin-session-actions">
+          <button
+            type="button"
+            class="button button-secondary"
+            id="adminGuideButton"
+          >
+            ❓ Kurzanleitung
+          </button>
+
+          <button
+            type="button"
+            class="button admin-logout-button"
+            id="adminLogoutButton"
+          >
+            Abmelden
+          </button>
+        </div>
       </div>
     </section>
 
@@ -753,6 +771,21 @@ function bindAdminActions(
       }
     );
 
+  const guideButton =
+    contentElement.querySelector(
+      '#adminGuideButton'
+    );
+
+  if (guideButton) {
+    guideButton.addEventListener(
+      'click',
+      () =>
+        openAdminGuideDialog(
+          contentElement
+        )
+    );
+  }
+
   const categoryManagementButton =
     contentElement.querySelector(
       '#adminCategoryManagementButton'
@@ -998,6 +1031,146 @@ function bindAdminActions(
     });
 }
 
+function getAdminGuideStorageKey() {
+  return (
+    ADMIN_GUIDE_STORAGE_PREFIX +
+    getTenant()
+  );
+}
+
+function showAdminGuideAfterFirstLogin(
+  contentElement
+) {
+  const storageKey =
+    getAdminGuideStorageKey();
+
+  if (
+    localStorage.getItem(
+      storageKey
+    ) === 'true'
+  ) {
+    return;
+  }
+
+  openAdminGuideDialog(
+    contentElement
+  );
+
+  localStorage.setItem(
+    storageKey,
+    'true'
+  );
+}
+
+function openAdminGuideDialog(
+  contentElement
+) {
+  const root =
+    contentElement.querySelector(
+      '#adminDialogRoot'
+    );
+
+  if (!root) {
+    return;
+  }
+
+  root.innerHTML = `
+    <div class="dialog-backdrop">
+      <section
+        class="dialog-card admin-guide-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="adminGuideTitle"
+      >
+        <header class="dialog-header">
+          <div>
+            <span class="eyebrow">
+              Administration
+            </span>
+
+            <h2 id="adminGuideTitle">
+              Kurzanleitung
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            class="icon-button"
+            data-admin-dialog-close
+            aria-label="Dialog schließen"
+          >
+            ×
+          </button>
+        </header>
+
+        <div class="admin-guide-content">
+          <section>
+            <h3>Veranstaltungen</h3>
+            <p>Veranstaltungen bilden den Rahmen für alle Einsätze und Listen.</p>
+            <p>Lege zuerst immer eine Veranstaltung an. Anschließend kannst du für diese Veranstaltung beliebig viele Helfereinsätze, Kuchenlisten, Sachspendenlisten oder weitere Listen hinzufügen.</p>
+          </section>
+
+          <section>
+            <h3>Einsätze &amp; Listen</h3>
+            <p>Über „Einsatz oder Liste“ kannst du neue Helfereinsätze oder Mitbringlisten anlegen.</p>
+            <p>Jede Liste kann bearbeitet, kopiert oder gelöscht werden.</p>
+          </section>
+
+          <section>
+            <h3>Punktesystem</h3>
+            <p>Lege fest, ob dein Verein mit einem Punktesystem (bspw. festgelegte Arbeitsstunden) arbeitet.</p>
+            <p>Nach Aktivierung des Punktsystems kannst du den Sollwert und die Punkte pro Einsatz festlegen.</p>
+          </section>
+
+          <section>
+            <h3>Kategorien</h3>
+            <p>Kategorien dienen der besseren Übersicht.</p>
+            <p>Du kannst Kategorien löschen, ändern oder neue Kategorien hinzufügen.</p>
+          </section>
+
+          <section>
+            <h3>Archiv</h3>
+            <p>Abgeschlossene Veranstaltungen werden automatisch zum Ende des Vereinsjahres archiviert.</p>
+            <p>Sie können jederzeit wiederhergestellt werden.</p>
+          </section>
+
+          <section>
+            <h3>Eintragungen</h3>
+            <p>Eltern oder Mitglieder tragen sich selbst bei den gewünschten Einsätzen ein.</p>
+            <p><strong>WICHTIG:</strong></p>
+            <p>Die Eintragung muss immer mit dem gleichen Namen erfolgen, damit eine Punkteberechnung möglich ist.</p>
+            <p>Im Adminbereich können Eintragungen jederzeit bearbeitet oder gelöscht werden.</p>
+          </section>
+        </div>
+
+        <div class="dialog-actions">
+          <button
+            type="button"
+            class="button button-primary"
+            data-admin-dialog-close
+          >
+            Schließen
+          </button>
+        </div>
+      </section>
+    </div>
+  `;
+
+  bindAdminSafeClose(
+    root,
+    () => false
+  );
+}
+
+function getAdminErrorMessage(
+  error,
+  fallback
+) {
+  return error && error.message
+    ? error.message
+    : fallback;
+}
+
 async function openCategoryManagementDialog(
   contentElement,
   options
@@ -1056,16 +1229,21 @@ async function openCategoryManagementDialog(
       root,
       contentElement,
       options,
-      categories
+      categories,
+      {
+        selectedId: '',
+        message: '',
+        messageType: ''
+      }
     );
   } catch (error) {
     root.querySelector(
       '.category-management-loading'
     ).textContent =
-      error &&
-      error.message
-        ? error.message
-        : 'Die Kategorien konnten nicht geladen werden.';
+      getAdminErrorMessage(
+        error,
+        'Die Kategorien konnten nicht geladen werden.'
+      );
   }
 }
 
@@ -1073,14 +1251,13 @@ function renderCategoryManagementContent(
   root,
   contentElement,
   options,
-  categories
+  categories,
+  viewState = {}
 ) {
   const sorted =
     (
-      Array.isArray(
-        categories
-      )
-        ? categories
+      Array.isArray(categories)
+        ? categories.slice()
         : []
     )
       .sort(
@@ -1098,6 +1275,17 @@ function renderCategoryManagementContent(
             }
           )
       );
+
+  const selectedId =
+    String(
+      viewState.selectedId || ''
+    );
+
+  const selectedCategory =
+    sorted.find(category =>
+      String(category.id) ===
+      selectedId
+    ) || null;
 
   const card =
     root.querySelector(
@@ -1135,7 +1323,11 @@ function renderCategoryManagementContent(
             ? sorted.map(category => `
                 <button
                   type="button"
-                  class="category-management-row"
+                  class="category-management-row ${
+                    String(category.id) === selectedId
+                      ? 'is-selected'
+                      : ''
+                  }"
                   data-category-edit="${escapeHtml(category.id)}"
                 >
                   <span
@@ -1168,6 +1360,17 @@ function renderCategoryManagementContent(
         <input
           name="id"
           type="hidden"
+          value="${selectedCategory
+            ? escapeHtml(selectedCategory.id)
+            : ''}"
+        >
+
+        <input
+          name="icon"
+          type="hidden"
+          value="${selectedCategory
+            ? escapeHtml(selectedCategory.icon || 'circle')
+            : 'circle'}"
         >
 
         <span class="eyebrow">
@@ -1175,7 +1378,9 @@ function renderCategoryManagementContent(
         </span>
 
         <h3 id="categoryEditorTitle">
-          Neue Kategorie
+          ${selectedCategory
+            ? 'Kategorie bearbeiten'
+            : 'Neue Kategorie'}
         </h3>
 
         <label class="form-field">
@@ -1186,6 +1391,9 @@ function renderCategoryManagementContent(
             type="text"
             maxlength="80"
             required
+            value="${selectedCategory
+              ? escapeHtml(selectedCategory.bezeichnung)
+              : ''}"
             placeholder="Zum Beispiel Getränkestand"
           >
         </label>
@@ -1197,7 +1405,9 @@ function renderCategoryManagementContent(
             <input
               name="farbe"
               type="color"
-              value="#546E7A"
+              value="${selectedCategory
+                ? escapeHtml(selectedCategory.farbe || '#546E7A')
+                : '#546E7A'}"
             >
 
             <span>
@@ -1210,16 +1420,38 @@ function renderCategoryManagementContent(
           <span>Status</span>
 
           <select name="status">
-            <option value="aktiv">Aktiv</option>
-            <option value="inaktiv">Inaktiv</option>
+            <option
+              value="aktiv"
+              ${!selectedCategory || selectedCategory.aktiv
+                ? 'selected'
+                : ''}
+            >
+              Aktiv
+            </option>
+            <option
+              value="inaktiv"
+              ${selectedCategory && !selectedCategory.aktiv
+                ? 'selected'
+                : ''}
+            >
+              Inaktiv
+            </option>
           </select>
         </label>
 
         <div
-          id="categoryManagementError"
-          class="form-error"
-          hidden
-        ></div>
+          id="categoryManagementMessage"
+          class="category-management-message ${
+            viewState.messageType === 'success'
+              ? 'is-success'
+              : 'is-error'
+          }"
+          ${viewState.message
+            ? ''
+            : 'hidden'}
+        >
+          ${escapeHtml(viewState.message || '')}
+        </div>
 
         <div class="category-editor-actions">
           <button
@@ -1234,7 +1466,9 @@ function renderCategoryManagementContent(
             type="button"
             class="button button-danger"
             id="deleteCategoryButton"
-            hidden
+            ${selectedCategory
+              ? ''
+              : 'hidden'}
           >
             Löschen
           </button>
@@ -1242,6 +1476,7 @@ function renderCategoryManagementContent(
           <button
             type="submit"
             class="button button-primary"
+            id="saveCategoryButton"
           >
             Speichern
           </button>
@@ -1250,44 +1485,10 @@ function renderCategoryManagementContent(
     </div>
   `;
 
-  const form =
-    card.querySelector(
-      '#categoryManagementForm'
-    );
-
-  const errorBox =
-    card.querySelector(
-      '#categoryManagementError'
-    );
-
-  const deleteButton =
-    card.querySelector(
-      '#deleteCategoryButton'
-    );
-
-  const title =
-    card.querySelector(
-      '#categoryEditorTitle'
-    );
-
-  const resetForm =
-    () => {
-      form.reset();
-      form.elements.id.value =
-        '';
-      form.elements.farbe.value =
-        '#546E7A';
-      form.elements.icon.value =
-        'circle';
-      form.elements.status.value =
-        'aktiv';
-      title.textContent =
-        'Neue Kategorie';
-      deleteButton.hidden =
-        true;
-      errorBox.hidden =
-        true;
-    };
+  bindAdminSafeClose(
+    root,
+    () => false
+  );
 
   card
     .querySelectorAll(
@@ -1296,37 +1497,19 @@ function renderCategoryManagementContent(
     .forEach(button => {
       button.addEventListener(
         'click',
-        () => {
-          const category =
-            sorted.find(item =>
-              item.id ===
-              button.dataset.categoryEdit
-            );
-
-          if (!category) {
-            return;
-          }
-
-          form.elements.id.value =
-            category.id;
-          form.elements.bezeichnung.value =
-            category.bezeichnung;
-          form.elements.farbe.value =
-            category.farbe;
-          form.elements.icon.value =
-            category.icon || 'circle';
-          form.elements.status.value =
-            category.status || 'aktiv';
-
-          title.textContent =
-            'Kategorie bearbeiten';
-
-          deleteButton.hidden =
-            false;
-
-          errorBox.hidden =
-            true;
-        }
+        () =>
+          renderCategoryManagementContent(
+            root,
+            contentElement,
+            options,
+            sorted,
+            {
+              selectedId:
+                button.dataset.categoryEdit,
+              message: '',
+              messageType: ''
+            }
+          )
       );
     });
 
@@ -1336,95 +1519,122 @@ function renderCategoryManagementContent(
     )
     .addEventListener(
       'click',
-      resetForm
+      () =>
+        renderCategoryManagementContent(
+          root,
+          contentElement,
+          options,
+          sorted,
+          {
+            selectedId: '',
+            message: '',
+            messageType: ''
+          }
+        )
     );
 
-  deleteButton.addEventListener(
-    'click',
-    () => {
-      const id =
-        form.elements.id.value;
+  const form =
+    card.querySelector(
+      '#categoryManagementForm'
+    );
 
-      if (!id) {
-        return;
-      }
+  const saveButton =
+    card.querySelector(
+      '#saveCategoryButton'
+    );
 
-      if (
-        !window.confirm(
-          'Soll diese Kategorie endgültig gelöscht werden? Das ist nur möglich, wenn sie nicht verwendet wird.'
-        )
-      ) {
-        return;
-      }
+  const deleteButton =
+    card.querySelector(
+      '#deleteCategoryButton'
+    );
 
-      const previousCategories =
-        getStoreSnapshot()
-          .categories
-          .slice();
+  if (deleteButton) {
+    deleteButton.addEventListener(
+      'click',
+      async () => {
+        const id =
+          form.elements.id.value;
 
-      const optimisticCategories =
-        previousCategories.filter(
-          category =>
-            category.id !==
-            id
+        const category =
+          sorted.find(item =>
+            String(item.id) ===
+            String(id)
+          );
+
+        if (!id || !category) {
+          return;
+        }
+
+        if (
+          !window.confirm(
+            'Soll die Kategorie „' +
+            category.bezeichnung +
+            '“ endgültig gelöscht werden? Das ist nur möglich, wenn sie nicht verwendet wird.'
+          )
+        ) {
+          return;
+        }
+
+        setCategoryFormBusy(
+          form,
+          true,
+          'Wird gelöscht …'
         );
 
-      updateCategories(
-        optimisticCategories
-      );
-
-      root.innerHTML =
-        '';
-
-      renderAdminDashboard(
-        contentElement,
-        options
-      );
-
-      apiPost(
-        'deletecategory',
-        {
-          id:
-            id
-        },
-        getStoredToken()
-      )
-        .then(() => {
-          window.setTimeout(
-            () =>
-              refreshStore()
-                .catch(error =>
-                  console.warn(
-                    'Kategorien konnten nicht sofort aktualisiert werden.',
-                    error
-                  )
-                ),
-            12000
-          );
-        })
-        .catch(error => {
-          updateCategories(
-            previousCategories
+        try {
+          await apiPost(
+            'deletecategory',
+            {
+              id
+            },
+            getStoredToken()
           );
 
-          renderAdminDashboard(
+          const nextCategories =
+            sorted.filter(item =>
+              String(item.id) !==
+              String(id)
+            );
+
+          syncActiveCategoriesToStore(
+            nextCategories
+          );
+
+          renderCategoryManagementContent(
+            root,
             contentElement,
-            options
+            options,
+            nextCategories,
+            {
+              selectedId: '',
+              message:
+                'Die Kategorie wurde gelöscht.',
+              messageType:
+                'success'
+            }
+          );
+        } catch (error) {
+          setCategoryFormBusy(
+            form,
+            false
           );
 
-          window.alert(
-            error &&
-            error.message
-              ? error.message
-              : 'Die Kategorie konnte nicht gelöscht werden.'
+          showCategoryDialogMessage(
+            form,
+            getAdminErrorMessage(
+              error,
+              'Die Kategorie konnte nicht gelöscht werden.'
+            ),
+            'error'
           );
-        });
-    }
-  );
+        }
+      }
+    );
+  }
 
   form.addEventListener(
     'submit',
-    event => {
+    async event => {
       event.preventDefault();
 
       const id =
@@ -1441,122 +1651,206 @@ function renderCategoryManagementContent(
         status:
           form.elements.status.value,
         sortierung:
-          0
+          selectedCategory
+            ? Number(selectedCategory.sortierung || 0)
+            : 0
       };
 
-      const previousCategories =
-        getStoreSnapshot()
-          .categories
-          .slice();
+      setCategoryFormBusy(
+        form,
+        true,
+        'Wird gespeichert …'
+      );
 
-      const temporaryId =
-        id ||
-        (
-          'TEMP_CATEGORY_' +
-          Date.now()
+      try {
+        const saved =
+          await apiPost(
+            id
+              ? 'updatecategory'
+              : 'createcategory',
+            id
+              ? {
+                  id,
+                  data:
+                    payload
+                }
+              : {
+                  data:
+                    payload
+                },
+            getStoredToken()
+          );
+
+        const normalizedSaved = {
+          ...(saved || {}),
+          id:
+            saved && saved.id
+              ? saved.id
+              : id,
+          bezeichnung:
+            saved && saved.bezeichnung
+              ? saved.bezeichnung
+              : payload.bezeichnung,
+          farbe:
+            saved && saved.farbe
+              ? saved.farbe
+              : payload.farbe,
+          icon:
+            saved && saved.icon
+              ? saved.icon
+              : payload.icon,
+          status:
+            saved && saved.status
+              ? saved.status
+              : payload.status,
+          aktiv:
+            saved && typeof saved.aktiv === 'boolean'
+              ? saved.aktiv
+              : payload.status === 'aktiv',
+          sortierung:
+            saved && saved.sortierung !== undefined
+              ? saved.sortierung
+              : payload.sortierung
+        };
+
+        const nextCategories =
+          id
+            ? sorted.map(category =>
+                String(category.id) ===
+                String(id)
+                  ? normalizedSaved
+                  : category
+              )
+            : [
+                ...sorted,
+                normalizedSaved
+              ];
+
+        syncActiveCategoriesToStore(
+          nextCategories
         );
 
-      const optimisticCategory = {
-        id:
-          temporaryId,
-        bezeichnung:
-          payload.bezeichnung,
-        farbe:
-          payload.farbe,
-        status:
-          payload.status,
-        aktiv:
-          payload.status ===
-          'aktiv',
-        sortierung:
-          0
-      };
+        renderCategoryManagementContent(
+          root,
+          contentElement,
+          options,
+          nextCategories,
+          {
+            selectedId:
+              normalizedSaved.id,
+            message:
+              id
+                ? 'Die Kategorie wurde gespeichert.'
+                : 'Die Kategorie wurde angelegt.',
+            messageType:
+              'success'
+          }
+        );
+      } catch (error) {
+        setCategoryFormBusy(
+          form,
+          false
+        );
 
-      const optimisticCategories =
-        id
-          ? previousCategories.map(
-              category =>
-                category.id ===
-                id
-                  ? optimisticCategory
-                  : category
-            )
-          : [
-              ...previousCategories,
-              optimisticCategory
-            ];
-
-      updateCategories(
-        optimisticCategories
-      );
-
-      root.innerHTML =
-        '';
-
-      renderAdminDashboard(
-        contentElement,
-        options
-      );
-
-      apiPost(
-        id
-          ? 'updatecategory'
-          : 'createcategory',
-        id
-          ? {
-              id:
-                id,
-              data:
-                payload
-            }
-          : {
-              data:
-                payload
-            },
-        getStoredToken()
-      )
-        .then(() => {
-          window.setTimeout(
-            () =>
-              refreshStore()
-                .then(() =>
-                  renderAdminDashboard(
-                    contentElement,
-                    options
-                  )
-                )
-                .catch(error =>
-                  console.warn(
-                    'Kategorien konnten nicht sofort aktualisiert werden.',
-                    error
-                  )
-                ),
-            12000
-          );
-        })
-        .catch(error => {
-          updateCategories(
-            previousCategories
-          );
-
-          renderAdminDashboard(
-            contentElement,
-            options
-          );
-
-          window.alert(
-            error &&
-            error.message
-              ? error.message
-              : 'Die Kategorie konnte nicht gespeichert werden.'
-          );
-        });
+        showCategoryDialogMessage(
+          form,
+          getAdminErrorMessage(
+            error,
+            'Die Kategorie konnte nicht gespeichert werden.'
+          ),
+          'error'
+        );
+      }
     }
   );
+}
 
-  bindAdminSafeClose(
-    root,
-    () => false
+function syncActiveCategoriesToStore(
+  categories
+) {
+  updateCategories(
+    (categories || [])
+      .filter(category =>
+        category.aktiv === true ||
+        category.status === 'aktiv'
+      )
+  );
+}
+
+function setCategoryFormBusy(
+  form,
+  busy,
+  actionText = ''
+) {
+  form
+    .querySelectorAll(
+      'button, input, select'
+    )
+    .forEach(element => {
+      element.disabled =
+        busy;
+    });
+
+  const saveButton =
+    form.querySelector(
+      '#saveCategoryButton'
+    );
+
+  const deleteButton =
+    form.querySelector(
+      '#deleteCategoryButton'
+    );
+
+  if (busy) {
+    if (actionText.includes('gelöscht')) {
+      if (deleteButton) {
+        deleteButton.textContent =
+          actionText;
+      }
+    } else if (saveButton) {
+      saveButton.textContent =
+        actionText;
+    }
+
+    return;
+  }
+
+  if (saveButton) {
+    saveButton.textContent =
+      'Speichern';
+  }
+
+  if (deleteButton) {
+    deleteButton.textContent =
+      'Löschen';
+  }
+}
+
+function showCategoryDialogMessage(
+  form,
+  message,
+  type
+) {
+  const box =
+    form.querySelector(
+      '#categoryManagementMessage'
+    );
+
+  if (!box) {
+    return;
+  }
+
+  box.textContent =
+    message;
+  box.hidden =
+    false;
+  box.classList.toggle(
+    'is-success',
+    type === 'success'
+  );
+  box.classList.toggle(
+    'is-error',
+    type !== 'success'
   );
 }
 
@@ -1840,7 +2134,7 @@ function openPointsConfigDialog(
       try {
         await apiPost('updatepointsconfig', { data: payload }, getStoredToken());
         window.setTimeout(() => {
-          refreshStore().then(() => renderAdminDashboard(contentElement, options)).catch(error => console.warn('Spätere Punkteaktualisierung fehlgeschlagen.', error));
+          refreshStore().catch(error => console.warn('Spätere Punkteaktualisierung fehlgeschlagen.', error));
         }, 15000);
       } catch (error) {
         restoreStoreBackup(backup);
@@ -2157,36 +2451,51 @@ function openEventForm(
             getStoredToken()
           );
 
-        refreshStore()
-          .then(() => {
-            renderAdminDashboard(
-              contentElement,
-              options
+        if (
+          !editing &&
+          saved &&
+          saved.id
+        ) {
+          updateEventOptimistic(
+            temporaryId,
+            saved
+          );
+        } else if (
+          editing &&
+          saved
+        ) {
+          updateEventOptimistic(
+            event.id,
+            saved
+          );
+        }
+
+        if (!editing) {
+          const addNow =
+            window.confirm(
+              'Veranstaltung wurde angelegt. Jetzt direkt den ersten Einsatz oder eine Liste hinzufügen?'
             );
 
-            if (!editing) {
-              const addNow =
-                window.confirm(
-                  'Veranstaltung wurde angelegt. Jetzt direkt den ersten Einsatz oder eine Liste hinzufügen?'
-                );
+          if (addNow) {
+            const newEvent =
+              findEvent(
+                saved && saved.id
+                  ? saved.id
+                  : temporaryId
+              );
 
-              if (addNow) {
-                const newEvent =
-                  findEvent(
-                    saved.id
-                  );
-
-                if (newEvent) {
-                  openListForm(
-                    contentElement,
-                    options,
-                    newEvent,
-                    null
-                  );
-                }
-              }
+            if (newEvent) {
+              openListForm(
+                contentElement,
+                options,
+                newEvent,
+                null
+              );
             }
-          })
+          }
+        }
+
+        refreshStore()
           .catch(
             error =>
               console.warn(
@@ -2777,7 +3086,8 @@ function openListForm(
       );
 
       try {
-        await apiPost(
+        const saved =
+          await apiPost(
           editing
             ? 'updatelist'
             : 'createlist',
@@ -2795,13 +3105,26 @@ function openListForm(
           getStoredToken()
         );
 
+        if (
+          !editing &&
+          saved &&
+          saved.id
+        ) {
+          updateListOptimistic(
+            temporaryId,
+            saved
+          );
+        } else if (
+          editing &&
+          saved
+        ) {
+          updateListOptimistic(
+            list.id,
+            saved
+          );
+        }
+
         refreshStore()
-          .then(() =>
-            renderAdminDashboard(
-              contentElement,
-              options
-            )
-          )
           .catch(
             error =>
               console.warn(

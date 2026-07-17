@@ -40,6 +40,10 @@ import {
   renderPointsPage
 } from './points.js';
 
+import {
+  renderArchivePage
+} from './archive.js';
+
 const elements = {
   app:
     document.getElementById('app'),
@@ -206,10 +210,11 @@ function registerRoutes() {
   registerRoute(
     'archive',
     () =>
-      renderPlaceholder(
-        'Archiv',
-        'Archivierte Veranstaltungen werden hier angezeigt.'
-      )
+      renderArchivePage({
+        contentElement:
+          elements.content,
+        setPageHeading
+      })
   );
 
   registerRoute(
@@ -270,10 +275,11 @@ async function renderCurrentPage() {
   if (
     route === 'archive'
   ) {
-    return renderPlaceholder(
-      'Archiv',
-      'Archivierte Veranstaltungen werden hier angezeigt.'
-    );
+    return renderArchivePage({
+      contentElement:
+        elements.content,
+      setPageHeading
+    });
   }
 
   return renderDashboard();

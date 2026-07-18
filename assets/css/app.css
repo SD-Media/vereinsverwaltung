@@ -4413,9 +4413,15 @@ a:focus-visible {
   color: var(--color-muted);
 }
 
+.mailbox-message-content {
+  padding: 0 24px 4px;
+}
+
 .mailbox-message-date {
-  margin-bottom: 14px;
+  margin: 0 0 12px;
+  color: var(--color-muted);
   font-size: 13px;
+  font-weight: 600;
 }
 
 .mailbox-message-body {
@@ -4444,10 +4450,16 @@ a:focus-visible {
   background: var(--color-surface-muted);
 }
 
-.message-history-item > div {
+.message-history-header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+}
+
+.message-history-header > div {
+  display: grid;
+  gap: 4px;
 }
 
 .message-history-item span,
@@ -4470,8 +4482,7 @@ a:focus-visible {
     width: calc(100% - 10px);
   }
 
-  .message-history-item > div {
-    display: grid;
-    gap: 4px;
+  .message-history-header {
+    align-items: flex-start;
   }
 }

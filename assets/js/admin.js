@@ -1356,6 +1356,27 @@ function openAdminGuideDialog(
           </section>
 
           <section>
+            <h3>Vereinsjahr und Adminpasswort</h3>
+            <p>Über die Einstellungen im Adminbereich kannst du den Beginn des Vereinsjahres festlegen. Das Ende des Auswertungszeitraums wird automatisch berechnet.</p>
+            <p>Dort kannst du außerdem das gemeinsame Adminpasswort der Einrichtung ändern. Zur Sicherheit muss das bisherige Passwort bestätigt werden.</p>
+          </section>
+
+          <section>
+            <h3>QR-Code und öffentlicher Link</h3>
+            <p>Im linken Menü kannst du einen QR-Code zur öffentlichen Übersicht anzeigen oder den öffentlichen Link teilen. Darüber gelangen Eltern und Mitglieder direkt zu allen aktuellen Veranstaltungen und Listen.</p>
+          </section>
+
+          <section>
+            <h3>Postfach</h3>
+            <p>Im Postfach findest du Mitteilungen des Plattformbetreibers. Neue Nachrichten werden beim Öffnen des Adminbereichs angezeigt und bleiben anschließend im Postfach zum Nachlesen erhalten.</p>
+          </section>
+
+          <section>
+            <h3>Support & Anregungen</h3>
+            <p>Über den Menüpunkt „Support & Anregungen“ kannst du Fragen, Verbesserungsvorschläge und Ideen für neue Funktionen direkt übermitteln.</p>
+          </section>
+
+          <section>
             <h3>Archiv</h3>
             <p>Abgeschlossene Veranstaltungen werden automatisch zum Ende des Vereinsjahres archiviert.</p>
             <p>Sie können jederzeit wiederhergestellt werden.</p>

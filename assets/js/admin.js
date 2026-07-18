@@ -20,6 +20,10 @@ import {
 } from './archive.js';
 
 import {
+  bindAdminMailbox
+} from './messages.js?v=2.4.0';
+
+import {
   getStoreSnapshot,
   refreshStore,
   getAllEvents,
@@ -355,6 +359,14 @@ function renderAdminDashboard(
 
       <button
         type="button"
+        class="button button-secondary admin-mailbox-button"
+        id="adminMailboxButton"
+      >
+        ✉ Postfach <span id="adminMailboxBadge" class="mailbox-badge" hidden></span>
+      </button>
+
+      <button
+        type="button"
         class="button button-primary"
         id="createEventButton"
       >
@@ -396,6 +408,8 @@ function renderAdminDashboard(
     contentElement,
     options
   );
+
+  bindAdminMailbox(contentElement);
 }
 
 function renderAdminEventCard(

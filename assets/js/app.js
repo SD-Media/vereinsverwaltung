@@ -51,7 +51,7 @@ import {
 
 import {
   renderSupportPage
-} from './support.js?v=2.4.0';
+} from './support.js?v=2.4.1';
 
 import {
   validateSession

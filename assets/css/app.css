@@ -4414,11 +4414,16 @@ a:focus-visible {
 }
 
 .mailbox-message-content {
-  padding: 0 24px 4px;
+  margin: 0 22px 4px;
+  padding: 14px;
+  border: 4px solid #ffffff;
+  border-radius: 16px;
+  background: var(--color-surface-muted);
+  box-shadow: 0 0 0 1px var(--color-border);
 }
 
 .mailbox-message-date {
-  margin: 0 0 12px;
+  margin: 0 4px 12px;
   color: var(--color-muted);
   font-size: 13px;
   font-weight: 600;
@@ -4430,8 +4435,16 @@ a:focus-visible {
   border: 1px solid var(--color-border);
   border-radius: 12px;
   line-height: 1.65;
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
 }
+
+.tenant-settings-dialog { max-width: 920px; }
+.tenant-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding: 4px 24px 20px; }
+.tenant-settings-section { padding: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-muted); }
+.tenant-settings-section h3 { margin: 0 0 8px; }
+.tenant-settings-section p { margin: 0 0 18px; color: var(--color-muted); line-height: 1.55; }
+.form-success { margin: 10px 0; padding: 10px 12px; border-radius: 10px; color: var(--color-success); background: rgba(29,122,74,.10); }
+@media (max-width: 760px) { .tenant-settings-grid { grid-template-columns: 1fr; padding: 4px 14px 16px; } .mailbox-message-content { margin: 0 12px 4px; } }
 
 .superadmin-message-panel {
   margin-top: 20px;

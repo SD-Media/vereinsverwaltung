@@ -33,7 +33,7 @@
 
   <link
     rel="stylesheet"
-    href="/vereinsverwaltung/assets/css/app.css?v=2.3.0"
+    href="/vereinsverwaltung/assets/css/app.css?v=2.4.0"
   >
 </head>
 
@@ -49,6 +49,7 @@
     >
       <div class="brand">
         <div
+          id="brandMark"
           class="brand-mark"
           aria-hidden="true"
         >
@@ -103,17 +104,27 @@
           href="#mine"
           data-route-link="mine"
         >
-          <span
-            class="nav-icon"
-            aria-hidden="true"
-          >
-            ✓
-          </span>
-
-          <span>
-            Meine Veranstaltungen &amp; Listen
-          </span>
+          <span class="nav-icon" aria-hidden="true">✓</span>
+          <span>Meine Veranstaltungen &amp; Listen</span>
         </a>
+
+        <button
+          id="tenantQrButton"
+          class="navigation-utility-button admin-sub-navigation"
+          type="button"
+        >
+          <span class="nav-icon" aria-hidden="true">▦</span>
+          <span>QR-Code anzeigen</span>
+        </button>
+
+        <button
+          id="tenantShareButton"
+          class="navigation-utility-button admin-sub-navigation"
+          type="button"
+        >
+          <span class="nav-icon" aria-hidden="true">↗</span>
+          <span>Öffentlichen Link teilen</span>
+        </button>
 
         <a
           href="#points"
@@ -147,6 +158,11 @@
           <span>
             Archiv
           </span>
+        </a>
+
+        <a href="#support" data-route-link="support">
+          <span class="nav-icon" aria-hidden="true">?</span>
+          <span>Support &amp; Anregungen</span>
         </a>
 
         <div class="navigation-section">
@@ -219,11 +235,9 @@
         <div class="topbar-center-logo" id="topbarCenterLogo" hidden></div>
 
       <div class="topbar-actions">
-        <button id="tenantQrButton" class="topbar-icon-button" type="button" title="QR-Code anzeigen" aria-label="QR-Code anzeigen">▦</button>
-        <button id="tenantShareButton" class="topbar-icon-button" type="button" title="Einrichtungsseite teilen" aria-label="Einrichtungsseite teilen">↗</button>
         <button id="themeToggleButton" class="topbar-icon-button" type="button" title="Darstellung wechseln" aria-label="Darstellung wechseln">◐</button>
           <span class="version-badge">
-            Version 2.3.0
+            Version 2.4.0
           </span>
         </div>
       </header>
@@ -248,24 +262,24 @@
   <script type="importmap">
     {
       "imports": {
-        "/vereinsverwaltung/assets/js/admin.js": "/vereinsverwaltung/assets/js/admin.js?v=2.3.0",
-        "/vereinsverwaltung/assets/js/api.js": "/vereinsverwaltung/assets/js/api.js?v=2.3.0",
-        "/vereinsverwaltung/assets/js/app.js": "/vereinsverwaltung/assets/js/app.js?v=2.3.0",
-        "/vereinsverwaltung/assets/js/archive.js": "/vereinsverwaltung/assets/js/archive.js?v=2.3.0",
-        "/vereinsverwaltung/assets/js/auth.js": "/vereinsverwaltung/assets/js/auth.js?v=2.3.0",
-        "/vereinsverwaltung/assets/js/config.js": "/vereinsverwaltung/assets/js/config.js?v=2.3.0",
-        "/vereinsverwaltung/assets/js/events.js": "/vereinsverwaltung/assets/js/events.js?v=2.3.0",
-        "/vereinsverwaltung/assets/js/points.js": "/vereinsverwaltung/assets/js/points.js?v=2.3.0",
-        "/vereinsverwaltung/assets/js/router.js": "/vereinsverwaltung/assets/js/router.js?v=2.3.0",
-        "/vereinsverwaltung/assets/js/store.js": "/vereinsverwaltung/assets/js/store.js?v=2.3.0",
-        "/vereinsverwaltung/assets/js/superadmin.js": "/vereinsverwaltung/assets/js/superadmin.js?v=2.3.0"
+        "/vereinsverwaltung/assets/js/admin.js": "/vereinsverwaltung/assets/js/admin.js?v=2.4.0",
+        "/vereinsverwaltung/assets/js/api.js": "/vereinsverwaltung/assets/js/api.js?v=2.4.0",
+        "/vereinsverwaltung/assets/js/app.js": "/vereinsverwaltung/assets/js/app.js?v=2.4.0",
+        "/vereinsverwaltung/assets/js/archive.js": "/vereinsverwaltung/assets/js/archive.js?v=2.4.0",
+        "/vereinsverwaltung/assets/js/auth.js": "/vereinsverwaltung/assets/js/auth.js?v=2.4.0",
+        "/vereinsverwaltung/assets/js/config.js": "/vereinsverwaltung/assets/js/config.js?v=2.4.0",
+        "/vereinsverwaltung/assets/js/events.js": "/vereinsverwaltung/assets/js/events.js?v=2.4.0",
+        "/vereinsverwaltung/assets/js/points.js": "/vereinsverwaltung/assets/js/points.js?v=2.4.0",
+        "/vereinsverwaltung/assets/js/router.js": "/vereinsverwaltung/assets/js/router.js?v=2.4.0",
+        "/vereinsverwaltung/assets/js/store.js": "/vereinsverwaltung/assets/js/store.js?v=2.4.0",
+        "/vereinsverwaltung/assets/js/superadmin.js": "/vereinsverwaltung/assets/js/superadmin.js?v=2.4.0"
       }
     }
   </script>
 
   <script
     type="module"
-    src="/vereinsverwaltung/assets/js/app.js?v=2.3.0"
+    src="/vereinsverwaltung/assets/js/app.js?v=2.4.0"
   ></script>
 </body>
 </html>

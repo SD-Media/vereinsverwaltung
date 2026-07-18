@@ -386,6 +386,10 @@ function openEditDialog_(elements, token, tenant) {
       <label class="form-field"><span>Google-Sheet-ID</span><input name="sheetId" value="${escapeHtml_(tenant.sheetId)}" required></label>
       <label class="form-field"><span>Logo-URL <small>optional</small></span><input name="logoUrl" type="url" value="${escapeHtml_(tenant.logoUrl || '')}" placeholder="https://…/logo.png"></label>
       <label class="form-field"><span>Neues Adminpasswort <small>optional</small></span><input name="newPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Nur ausfüllen, wenn es geändert werden soll"></label>
+      <div class="form-grid-two">
+        <label class="form-field"><span>Starttag Vereinsjahr</span><input name="startTag" type="number" min="1" max="31" value="${escapeHtml_(tenant.startTag || 1)}" required></label>
+        <label class="form-field"><span>Startmonat Vereinsjahr</span><input name="startMonat" type="number" min="1" max="12" value="${escapeHtml_(tenant.startMonat || 1)}" required></label>
+      </div>
       <label class="form-field"><span>Status</span><select name="status">${['aktiv','testbetrieb','gesperrt','archiviert'].map(status => `<option value="${status}" ${tenant.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></label>
       <div id="superadminFormError" class="form-error" hidden></div>
       <div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog>Abbrechen</button><button class="button button-primary" type="submit">Speichern</button></div>
@@ -396,6 +400,8 @@ function openEditDialog_(elements, token, tenant) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = Object.fromEntries(new FormData(form).entries());
+    data.startTag = Number(data.startTag);
+    data.startMonat = Number(data.startMonat);
     await submitDialogAction_(form, async () => {
       await apiPost('superadminupdatetenant', { data }, token);
       closeDialog_();

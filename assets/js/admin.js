@@ -21,7 +21,7 @@ import {
 
 import {
   bindAdminMailbox
-} from './messages.js?v=2.4.2';
+} from './messages.js?v=2.5.0';
 
 import {
   getStoreSnapshot,
@@ -363,6 +363,14 @@ function renderAdminDashboard(
         id="adminMailboxButton"
       >
         ✉ Postfach <span id="adminMailboxBadge" class="mailbox-badge" hidden></span>
+      </button>
+
+      <button
+        type="button"
+        class="button button-secondary"
+        id="adminTenantSettingsButton"
+      >
+        ⚙ Einrichtungseinstellungen
       </button>
 
       <button
@@ -825,6 +833,18 @@ function bindAdminActions(
     );
   }
 
+  const tenantSettingsButton =
+    contentElement.querySelector(
+      '#adminTenantSettingsButton'
+    );
+
+  if (tenantSettingsButton) {
+    tenantSettingsButton.addEventListener(
+      'click',
+      () => openTenantSettingsDialog_(contentElement)
+    );
+  }
+
   const categoryManagementButton =
     contentElement.querySelector(
       '#adminCategoryManagementButton'
@@ -1109,6 +1129,122 @@ function bindAdminActions(
           )
       );
     });
+}
+
+
+async function openTenantSettingsDialog_(contentElement) {
+  const root = contentElement.querySelector('#adminDialogRoot');
+  if (!root) return;
+
+  root.innerHTML = `
+    <div class="dialog-backdrop">
+      <section class="dialog-card tenant-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="tenantSettingsTitle">
+        <header class="dialog-header">
+          <div>
+            <span class="eyebrow">Einrichtungseinstellungen</span>
+            <h2 id="tenantSettingsTitle">Passwort und Vereinsjahr</h2>
+          </div>
+          <button type="button" class="icon-button" data-tenant-settings-close aria-label="Dialog schließen">×</button>
+        </header>
+        <div class="tenant-settings-loading">Einstellungen werden geladen …</div>
+      </section>
+    </div>`;
+
+  const close = () => { root.innerHTML = ''; };
+  root.querySelectorAll('[data-tenant-settings-close]').forEach(button => button.addEventListener('click', close));
+
+  try {
+    const token = getStoredToken();
+    const settings = await apiPost('tenantsettings', {}, token);
+    const card = root.querySelector('.tenant-settings-dialog');
+    card.innerHTML = `
+      <header class="dialog-header">
+        <div>
+          <span class="eyebrow">Einrichtungseinstellungen</span>
+          <h2 id="tenantSettingsTitle">Passwort und Vereinsjahr</h2>
+        </div>
+        <button type="button" class="icon-button" data-tenant-settings-close aria-label="Dialog schließen">×</button>
+      </header>
+      <div class="tenant-settings-grid">
+        <form id="tenantPeriodForm" class="tenant-settings-section">
+          <h3>Vereinsjahr ändern</h3>
+          <p>Lege fest, an welchem Tag das Vereinsjahr beginnt. Das Ende wird automatisch berechnet.</p>
+          <div class="form-grid-two">
+            <label class="form-field"><span>Starttag</span><input name="startTag" type="number" min="1" max="31" value="${escapeHtml(settings.startTag || 1)}" required></label>
+            <label class="form-field"><span>Startmonat</span><select name="startMonat">${renderMonthOptions_(Number(settings.startMonat || 1))}</select></label>
+          </div>
+          <div class="form-error" data-period-error hidden></div>
+          <div class="form-success" data-period-success hidden></div>
+          <button class="button button-primary" type="submit">Vereinsjahr speichern</button>
+        </form>
+        <form id="tenantPasswordForm" class="tenant-settings-section">
+          <h3>Adminpasswort ändern</h3>
+          <p>Das neue Passwort muss mindestens acht Zeichen lang sein.</p>
+          <label class="form-field"><span>Aktuelles Passwort</span><input name="currentPassword" type="password" autocomplete="current-password" required></label>
+          <label class="form-field"><span>Neues Passwort</span><input name="newPassword" type="password" minlength="8" autocomplete="new-password" required></label>
+          <label class="form-field"><span>Neues Passwort wiederholen</span><input name="repeatPassword" type="password" minlength="8" autocomplete="new-password" required></label>
+          <div class="form-error" data-password-error hidden></div>
+          <div class="form-success" data-password-success hidden></div>
+          <button class="button button-primary" type="submit">Passwort ändern</button>
+        </form>
+      </div>
+      <div class="dialog-actions"><button class="button button-secondary" type="button" data-tenant-settings-close>Schließen</button></div>`;
+
+    card.querySelectorAll('[data-tenant-settings-close]').forEach(button => button.addEventListener('click', close));
+
+    card.querySelector('#tenantPeriodForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const errorBox = form.querySelector('[data-period-error]');
+      const successBox = form.querySelector('[data-period-success]');
+      const button = form.querySelector('[type="submit"]');
+      errorBox.hidden = true; successBox.hidden = true; button.disabled = true;
+      try {
+        const result = await apiPost('updatetenantperiod', {
+          data: { startTag: Number(form.elements.startTag.value), startMonat: Number(form.elements.startMonat.value) }
+        }, getStoredToken());
+        successBox.textContent = result.message || 'Das Vereinsjahr wurde gespeichert.';
+        successBox.hidden = false;
+        await refreshStore({ force: true });
+      } catch (error) {
+        errorBox.textContent = getAdminErrorMessage(error, 'Das Vereinsjahr konnte nicht gespeichert werden.');
+        errorBox.hidden = false;
+      } finally { button.disabled = false; }
+    });
+
+    card.querySelector('#tenantPasswordForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const errorBox = form.querySelector('[data-password-error]');
+      const successBox = form.querySelector('[data-password-success]');
+      const button = form.querySelector('[type="submit"]');
+      errorBox.hidden = true; successBox.hidden = true;
+      if (form.elements.newPassword.value !== form.elements.repeatPassword.value) {
+        errorBox.textContent = 'Die beiden neuen Passwörter stimmen nicht überein.'; errorBox.hidden = false; return;
+      }
+      button.disabled = true;
+      try {
+        const result = await apiPost('changetenantpassword', {
+          currentPassword: form.elements.currentPassword.value,
+          newPassword: form.elements.newPassword.value
+        }, getStoredToken());
+        successBox.textContent = result.message || 'Das Adminpasswort wurde geändert.';
+        successBox.hidden = false;
+        form.reset();
+      } catch (error) {
+        errorBox.textContent = getAdminErrorMessage(error, 'Das Passwort konnte nicht geändert werden.');
+        errorBox.hidden = false;
+      } finally { button.disabled = false; }
+    });
+  } catch (error) {
+    const loading = root.querySelector('.tenant-settings-loading');
+    if (loading) { loading.className = 'form-error'; loading.textContent = getAdminErrorMessage(error, 'Die Einstellungen konnten nicht geladen werden.'); }
+  }
+}
+
+function renderMonthOptions_(selectedMonth) {
+  const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  return months.map((name, index) => `<option value="${index + 1}" ${selectedMonth === index + 1 ? 'selected' : ''}>${name}</option>`).join('');
 }
 
 function getAdminGuideStorageKey() {

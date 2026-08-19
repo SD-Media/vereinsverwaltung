@@ -9,6 +9,13 @@ import {
 
 const tenant = resolveTenant();
 
+/* Temporär für die kontrollierte Performance-Messphase. */
+const PERFORMANCE_TRACE_TENANT = 'testverein';
+
+function isPerformanceTraceEnabled_() {
+  return tenant === PERFORMANCE_TRACE_TENANT;
+}
+
 export class ApiError extends Error {
   constructor(message, options = {}) {
     super(message);
@@ -63,6 +70,10 @@ export async function apiGet(
       'action',
       action
     );
+
+    if (isPerformanceTraceEnabled_()) {
+      url.searchParams.set('perf', '1');
+    }
 
     url.searchParams.set(
       '_',
@@ -140,6 +151,10 @@ export async function apiPost(
 
   if (tenant) {
     body.tenant = tenant;
+  }
+
+  if (isPerformanceTraceEnabled_()) {
+    body.perf = true;
   }
 
   if (token) {

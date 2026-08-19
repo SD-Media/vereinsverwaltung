@@ -9,12 +9,10 @@ import {
 
 const tenant = resolveTenant();
 
-/* Temporär für die kontrollierte Performance-Messphase. */
-const PERFORMANCE_TRACE_TENANT = 'testverein';
-
 function isPerformanceTraceEnabled_(action) {
-  return tenant === PERFORMANCE_TRACE_TENANT ||
-    String(action || '').toLowerCase().startsWith('superadmin');
+  // Produktionsbetrieb: Die abgeschlossene temporäre Messphase
+  // wird nicht mehr bei Webanfragen aktiviert.
+  return false;
 }
 
 export class ApiError extends Error {

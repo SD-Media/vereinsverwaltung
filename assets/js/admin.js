@@ -425,6 +425,7 @@ function renderAdminEventCard(
   categories,
   settings
 ) {
+  const isSaving = isTemporaryAdminId_(event.id);
   const lists =
     (event.listen || [])
       .slice()
@@ -436,12 +437,12 @@ function renderAdminEventCard(
     );
 
   return `
-    <article class="admin-event-card">
+    <article class="admin-event-card${isSaving ? ' is-saving' : ''}">
       <header
         class="admin-event-card-header"
-        data-admin-edit-event="${escapeHtml(event.id)}"
-        tabindex="0"
-        role="button"
+        ${isSaving
+          ? 'aria-busy="true"'
+          : `data-admin-edit-event="${escapeHtml(event.id)}" tabindex="0" role="button"`}
       >
         <div class="admin-event-date">
           ${escapeHtml(
@@ -462,7 +463,9 @@ function renderAdminEventCard(
               </h3>
             </div>
 
-            ${statusBadge(event.status)}
+            ${isSaving
+              ? '<span class="status-badge">Wird gespeichert …</span>'
+              : statusBadge(event.status)}
           </div>
 
           ${event.beschreibung
@@ -516,6 +519,7 @@ function renderAdminEventCard(
             title="Veranstaltung mit allen Listen drucken"
             aria-label="Veranstaltung mit allen Listen drucken"
             data-admin-print-event="${escapeHtml(event.id)}"
+            ${isSaving ? 'disabled' : ''}
           >
             ⎙
           </button>
@@ -525,6 +529,7 @@ function renderAdminEventCard(
             class="icon-action archive-action"
             title="Veranstaltung archivieren"
             data-admin-archive-event="${escapeHtml(event.id)}"
+            ${isSaving ? 'disabled' : ''}
           >
             ◰
           </button>
@@ -534,6 +539,7 @@ function renderAdminEventCard(
             class="icon-action"
             title="Veranstaltung kopieren"
             data-admin-copy-event="${escapeHtml(event.id)}"
+            ${isSaving ? 'disabled' : ''}
           >
             ⧉
           </button>
@@ -543,6 +549,7 @@ function renderAdminEventCard(
             class="icon-action danger"
             title="Veranstaltung löschen"
             data-admin-delete-event="${escapeHtml(event.id)}"
+            ${isSaving ? 'disabled' : ''}
           >
             ×
           </button>
@@ -559,6 +566,7 @@ function renderAdminEventCard(
             type="button"
             class="button button-secondary"
             data-admin-create-list="${escapeHtml(event.id)}"
+            ${isSaving ? 'disabled' : ''}
           >
             + Liste
           </button>
@@ -593,6 +601,7 @@ function renderAdminListRow(
   categories,
   settings
 ) {
+  const isSaving = isTemporaryAdminId_(list.id);
   const category =
     categories.find(item =>
       item.bezeichnung ===
@@ -610,12 +619,12 @@ function renderAdminListRow(
       : [];
 
   return `
-    <article class="admin-list-row">
+    <article class="admin-list-row${isSaving ? ' is-saving' : ''}">
       <div
         class="admin-list-click-area"
-        data-admin-edit-list="${escapeHtml(list.id)}"
-        tabindex="0"
-        role="button"
+        ${isSaving
+          ? 'aria-busy="true"'
+          : `data-admin-edit-list="${escapeHtml(list.id)}" tabindex="0" role="button"`}
       >
         <span
           class="admin-list-color"
@@ -629,11 +638,13 @@ function renderAdminListRow(
             </strong>
 
             <span>
-              ${escapeHtml(
-                list.kategorie ||
-                list.typ ||
-                'Liste'
-              )}
+              ${isSaving
+                ? 'Wird gespeichert …'
+                : escapeHtml(
+                    list.kategorie ||
+                    list.typ ||
+                    'Liste'
+                  )}
             </span>
           </div>
 
@@ -695,6 +706,7 @@ function renderAdminListRow(
           title="Nur diese Liste drucken"
           aria-label="Nur diese Liste drucken"
           data-admin-print-list="${escapeHtml(list.id)}"
+          ${isSaving ? 'disabled' : ''}
         >
           ⎙
         </button>
@@ -704,6 +716,7 @@ function renderAdminListRow(
           class="icon-action"
           title="Einsatz kopieren"
           data-admin-copy-list="${escapeHtml(list.id)}"
+          ${isSaving ? 'disabled' : ''}
         >
           ⧉
         </button>
@@ -713,6 +726,7 @@ function renderAdminListRow(
           class="icon-action danger"
           title="Einsatz löschen"
           data-admin-delete-list="${escapeHtml(list.id)}"
+          ${isSaving ? 'disabled' : ''}
         >
           ×
         </button>
@@ -740,6 +754,10 @@ function renderAdminListRow(
         : ''}
     </article>
   `;
+}
+
+function isTemporaryAdminId_(value) {
+  return String(value || '').indexOf('TEMP_') === 0;
 }
 
 function renderAdminEntry(entry) {

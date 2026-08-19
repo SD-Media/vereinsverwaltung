@@ -136,6 +136,10 @@ a:focus-visible {
   text-transform: uppercase;
 }
 
+.navigation-spacer {
+  height: 12px;
+}
+
 .navigation a {
   display: flex;
   align-items: center;
@@ -760,6 +764,7 @@ a:focus-visible {
   margin: 10px 0 0;
   color: var(--color-muted);
   line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 .status-badge {
@@ -844,6 +849,82 @@ a:focus-visible {
   color: var(--color-muted);
   font-size: 13px;
   line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+/* Version 2.5.3 – Dashboard-Hilfe und Direktzugriffe */
+.dashboard-guide {
+  margin-top: 24px;
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.dashboard-guide-heading h2 {
+  margin: 7px 0 0;
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+.dashboard-guide-heading p {
+  margin: 8px 0 0;
+  color: var(--color-muted);
+}
+
+.dashboard-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.dashboard-guide-card {
+  display: flex;
+  min-height: 170px;
+  flex-direction: column;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-muted);
+}
+
+.dashboard-guide-card h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.dashboard-guide-card p {
+  margin: 9px 0 18px;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.dashboard-guide-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  color: var(--color-primary-strong);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dashboard-guide-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  .dashboard-guide {
+    padding: 20px;
+  }
+
+  .dashboard-guide-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .assignment-meta {

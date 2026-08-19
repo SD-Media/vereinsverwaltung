@@ -609,30 +609,24 @@ function renderDashboard() {
       <div class="dashboard-guide-grid">
         ${dashboardGuideCard(
           'Veranstaltungen & Listen',
-          'Alle anstehenden Veranstaltungen und Einsätze ansehen und sich direkt eintragen.',
+          [
+            'Termine und verfügbare Einsätze ansehen',
+            'Eingetragene Personen direkt erkennen',
+            'Den gewünschten Einsatz auswählen und eintragen'
+          ],
           'events',
           'Veranstaltungen öffnen'
         )}
 
         ${dashboardGuideCard(
           'Meine Einsätze',
-          'Über den eigenen Namen alle persönlichen Eintragungen prüfen, drucken oder als PDF speichern.',
+          [
+            'Mit dem eigenen Namen nach Eintragungen suchen',
+            'Alle persönlichen Einsätze übersichtlich prüfen',
+            'Die Übersicht drucken oder als PDF speichern'
+          ],
           'mine',
           'Meine Einsätze öffnen'
-        )}
-
-        ${dashboardGuideCard(
-          'Support & Anregungen',
-          'Fragen, Probleme oder Verbesserungsvorschläge direkt an die zuständige Stelle senden.',
-          'support',
-          'Support öffnen'
-        )}
-
-        ${dashboardGuideCard(
-          'Administration',
-          'Veranstaltungen, Listen, Kategorien und Eintragungen im geschützten Bereich verwalten.',
-          'admin',
-          'Administration öffnen'
         )}
       </div>
     </section>
@@ -745,14 +739,18 @@ function metricCard(
 
 function dashboardGuideCard(
   title,
-  description,
+  information,
   route,
   linkText
 ) {
   return `
     <article class="dashboard-guide-card">
       <h3>${escapeHtml(title)}</h3>
-      <p>${escapeHtml(description)}</p>
+      <ul>
+        ${information
+          .map(item => `<li>${escapeHtml(item)}</li>`)
+          .join('')}
+      </ul>
       <a class="dashboard-guide-link" href="#${escapeHtml(route)}">
         ${escapeHtml(linkText)}
         <span aria-hidden="true">→</span>

@@ -143,7 +143,8 @@ export async function apiGet(
 export async function apiPost(
   action,
   payload = {},
-  token = ''
+  token = '',
+  requestOptions = {}
 ) {
   const body = {
     action,
@@ -173,7 +174,10 @@ export async function apiPost(
       body: JSON.stringify(body)
     },
     action,
-    APP_CONFIG.requestTimeoutMs
+    Number(
+      requestOptions.timeoutMs ||
+      APP_CONFIG.requestTimeoutMs
+    )
   );
 }
 

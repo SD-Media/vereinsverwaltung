@@ -12,8 +12,9 @@ const tenant = resolveTenant();
 /* Temporär für die kontrollierte Performance-Messphase. */
 const PERFORMANCE_TRACE_TENANT = 'testverein';
 
-function isPerformanceTraceEnabled_() {
-  return tenant === PERFORMANCE_TRACE_TENANT;
+function isPerformanceTraceEnabled_(action) {
+  return tenant === PERFORMANCE_TRACE_TENANT ||
+    String(action || '').toLowerCase().startsWith('superadmin');
 }
 
 export class ApiError extends Error {
@@ -71,7 +72,7 @@ export async function apiGet(
       action
     );
 
-    if (isPerformanceTraceEnabled_()) {
+    if (isPerformanceTraceEnabled_(action)) {
       url.searchParams.set('perf', '1');
     }
 
@@ -153,7 +154,7 @@ export async function apiPost(
     body.tenant = tenant;
   }
 
-  if (isPerformanceTraceEnabled_()) {
+  if (isPerformanceTraceEnabled_(action)) {
     body.perf = true;
   }
 

@@ -254,9 +254,35 @@ function bindTenantCardActions_(elements, token, tenants) {
   });
 
   elements.content.querySelectorAll('[data-edit-tenant]').forEach(button => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       const tenant = tenants.find(item => item.tenant === button.dataset.editTenant);
-      openEditDialog_(elements, token, tenant);
+      if (!tenant) return;
+
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Laden …';
+
+      try {
+        const details = await apiPost(
+          'superadmintenantdetails',
+          { targetTenant: tenant.tenant },
+          token
+        );
+        openEditDialog_(
+          elements,
+          token,
+          { ...tenant, ...(details || {}) }
+        );
+      } catch (error) {
+        window.alert(
+          error && error.message
+            ? error.message
+            : 'Die Einrichtungseinstellungen konnten nicht geladen werden.'
+        );
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
     });
   });
 

@@ -2743,6 +2743,14 @@ function openEventForm(
           );
         }
 
+        // Die optimistische Karte besitzt zunächst eine temporäre ID.
+        // Nach der Serverantwort muss die Oberfläche neu gebunden werden,
+        // damit Bearbeiten sofort mit der endgültigen ID funktioniert.
+        renderAdminDashboard(
+          contentElement,
+          options
+        );
+
         if (!editing && seriesType !== 'none' && seriesCount > 1) {
           for (let seriesIndex = 1; seriesIndex < seriesCount; seriesIndex++) {
             const seriesPayload = createSeriesEventPayload_(payload, seriesType, seriesIndex);
@@ -3423,6 +3431,13 @@ function openListForm(
             saved
           );
         }
+
+        // Nach dem Austausch der temporären ID die Klickbindungen
+        // unmittelbar auf den gespeicherten Datensatz aktualisieren.
+        renderAdminDashboard(
+          contentElement,
+          options
+        );
 
         refreshStore()
           .catch(

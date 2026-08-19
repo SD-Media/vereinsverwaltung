@@ -895,11 +895,16 @@ a:focus-visible {
   font-size: 17px;
 }
 
-.dashboard-guide-card p {
+.dashboard-guide-card ul {
   margin: 9px 0 18px;
+  padding-left: 18px;
   color: var(--color-muted);
   font-size: 13px;
   line-height: 1.6;
+}
+
+.dashboard-guide-card li + li {
+  margin-top: 4px;
 }
 
 .dashboard-guide-link {

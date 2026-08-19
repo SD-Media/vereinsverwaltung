@@ -485,7 +485,7 @@ function applyTenantConfiguration() {
   }
 
   const mineLink = document.querySelector('[data-route-link="mine"]');
-  if (mineLink) mineLink.hidden = settings.punkteAktiv !== true;
+  if (mineLink) mineLink.hidden = false;
   const separatePointsLink = document.querySelector('[data-route-link="points"]');
   if (separatePointsLink) separatePointsLink.hidden = true;
   document.querySelectorAll('[data-points-only]').forEach(element => {

@@ -47,6 +47,14 @@ export async function login(password) {
       {
         password:
           String(password || '')
+      },
+      '',
+      {
+        // Ein vollständig kalter Apps-Script-/Google-Sheets-Start
+        // kann die allgemeine 20-Sekunden-Grenze überschreiten.
+        // Nur der Login erhält deshalb mehr Wartezeit; automatische
+        // Wiederholungen von Schreibaktionen bleiben ausgeschlossen.
+        timeoutMs: 45000
       }
     );
 

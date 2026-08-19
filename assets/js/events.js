@@ -331,11 +331,7 @@ function renderEvent(
           </div>
 
           ${event.beschreibung
-            ? `
-              <p>
-                ${escapeHtml(event.beschreibung)}
-              </p>
-            `
+            ? `<p>${escapeHtml(event.beschreibung)}</p>`
             : ''}
 
           ${event.verantwortlich
@@ -449,11 +445,7 @@ function renderList(
         </h3>
 
         ${list.beschreibung
-          ? `
-            <p class="assignment-description">
-              ${escapeHtml(list.beschreibung)}
-            </p>
-          `
+          ? `<p class="assignment-description">${escapeHtml(list.beschreibung)}</p>`
           : ''}
 
         <div class="assignment-meta">
@@ -506,9 +498,9 @@ function renderList(
 
         ${entries.length
           ? `
-            <details class="entry-list">
+            <details class="entry-list" open>
               <summary>
-                Bereits eingetragen
+                Eingetragene Personen
                 <span>
                   ${entries.length}
                 </span>

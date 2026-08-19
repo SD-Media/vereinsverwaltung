@@ -19,8 +19,8 @@ export function renderPointsPage(
   } = options;
 
   setPageHeading(
-    'Meine Eintragungen',
-    'Persönliche Eintragungen und Soll-Ist-Stand prüfen'
+    'Meine Einsätze',
+    'Persönliche Eintragungen suchen, prüfen und ausdrucken'
   );
 
   const data =
@@ -33,18 +33,13 @@ export function renderPointsPage(
       ? data.punkte
       : null;
 
-  if (
-    !points ||
-    !points.konfiguration ||
-    points.konfiguration.punkteAktiv !==
-      true
-  ) {
+  if (!points || !points.konfiguration) {
     contentElement.innerHTML = `
       <section class="empty-state">
         <div class="empty-icon">◉</div>
-        <h2>Punktesystem nicht aktiviert</h2>
+        <h2>Persönliche Übersicht nicht verfügbar</h2>
         <p>
-          Für diese Einrichtung ist derzeit kein Punktesystem aktiv.
+          Die Daten für die persönliche Übersicht konnten noch nicht geladen werden.
         </p>
       </section>
     `;
@@ -56,6 +51,10 @@ export function renderPointsPage(
     points.konfiguration
       .punkteBezeichnung ||
     'Punkte';
+
+  const pointsEnabled =
+    points.konfiguration
+      .punkteAktiv === true;
 
   contentElement.innerHTML = `
     <section class="info-banner">
@@ -79,7 +78,7 @@ export function renderPointsPage(
           Persönliche Übersicht
         </span>
 
-        <h2>Eigenen Punktestand prüfen</h2>
+        <h2>Eigene Einsätze prüfen</h2>
 
         <p>
           Gib den Namen genau so ein, wie er bei deinen Eintragungen
@@ -105,7 +104,7 @@ export function renderPointsPage(
           type="submit"
           class="button button-primary"
         >
-          Punktestand anzeigen
+          Einsätze anzeigen
         </button>
       </form>
     </section>
@@ -131,7 +130,8 @@ export function renderPointsPage(
         contentElement,
         points,
         name,
-        label
+        label,
+        pointsEnabled
       );
     }
   );
@@ -141,7 +141,8 @@ function renderPersonalResult(
   contentElement,
   points,
   searchedName,
-  label
+  label,
+  pointsEnabled
 ) {
   const target =
     contentElement.querySelector(
@@ -226,22 +227,16 @@ function renderPersonalResult(
       </header>
 
       <div class="points-metric-grid">
-        ${metric(
-          'Soll',
-          targetValue,
-          label
-        )}
-
-        ${metric(
-          'Ist',
-          result.punkte,
-          label
-        )}
-
-        ${differenceMetric(
-          Number(result.punkte || 0) - Number(targetValue || 0),
-          label
-        )}
+        ${pointsEnabled
+          ? `
+            ${metric('Soll', targetValue, label)}
+            ${metric('Ist', result.punkte, label)}
+            ${differenceMetric(
+              Number(result.punkte || 0) - Number(targetValue || 0),
+              label
+            )}
+          `
+          : ''}
 
         ${metric(
           'Eintragungen',
@@ -250,7 +245,7 @@ function renderPersonalResult(
         )}
       </div>
 
-      ${targetValue > 0
+      ${pointsEnabled && targetValue > 0
         ? `
           <div class="points-progress">
             <div>
@@ -272,7 +267,7 @@ function renderPersonalResult(
           result.details.length
           ? result.details
               .map(detail => `
-                ${renderPointDetail(detail, label)}
+                ${renderPointDetail(detail, label, pointsEnabled)}
               `)
               .join('')
           : `
@@ -297,12 +292,12 @@ function differenceMetric(difference, suffix) {
   return `<div class="points-metric difference-metric ${cssClass}"><span>Differenz</span><strong>${value > 0 ? '+' : ''}${formatNumber(value)}</strong>${suffix ? `<small>${escapeHtml(suffix)}</small>` : ''}</div>`;
 }
 
-function renderPointDetail(detail, label) {
+function renderPointDetail(detail, label, pointsEnabled) {
   const list = findPointListDetails_(detail);
   const date = detail.datum || (list ? list.datum : '');
   const time = detail.uhrzeit || (list ? list.uhrzeit : '');
   const responsible = detail.verantwortlich || (list ? list.verantwortlich : '');
-  return `<div class="points-detail-row"><div><strong>${escapeHtml(detail.veranstaltung || 'Veranstaltung')}</strong><span class="points-detail-title">${escapeHtml(detail.liste || 'Liste')}</span><div class="points-detail-meta">${date ? `<span>${escapeHtml(date)}</span>` : ''}${time ? `<span>${escapeHtml(time)} Uhr</span>` : ''}${responsible ? `<span>Verantwortlich: ${escapeHtml(responsible)}</span>` : ''}</div></div><strong>${formatNumber(detail.punkte)} ${escapeHtml(label)}</strong></div>`;
+  return `<div class="points-detail-row"><div><strong>${escapeHtml(detail.veranstaltung || 'Veranstaltung')}</strong><span class="points-detail-title">${escapeHtml(detail.liste || 'Liste')}</span><div class="points-detail-meta">${date ? `<span>${escapeHtml(date)}</span>` : ''}${time ? `<span>${escapeHtml(time)} Uhr</span>` : ''}${responsible ? `<span>Verantwortlich: ${escapeHtml(responsible)}</span>` : ''}</div></div>${pointsEnabled ? `<strong>${formatNumber(detail.punkte)} ${escapeHtml(label)}</strong>` : ''}</div>`;
 }
 
 function findPointListDetails_(detail) {

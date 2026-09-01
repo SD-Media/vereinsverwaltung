@@ -2013,11 +2013,16 @@ function renderCategoryManagementContent(
         }
 
         if (
-          !window.confirm(
-            'Soll die Kategorie „' +
-            category.bezeichnung +
-            '“ endgültig gelöscht werden? Das ist nur möglich, wenn sie nicht verwendet wird.'
-          )
+          !(await showAdminConfirm_({
+            eyebrow: 'Kategorie löschen',
+            title: 'Kategorie wirklich löschen?',
+            message:
+              'Soll die Kategorie „' +
+              category.bezeichnung +
+              '“ endgültig gelöscht werden? Das ist nur möglich, wenn sie nicht verwendet wird.',
+            confirmLabel: 'Kategorie löschen',
+            danger: true
+          }))
         ) {
           return;
         }
@@ -2586,7 +2591,15 @@ function openPointsConfigDialog(
       } catch (error) {
         restoreStoreBackup(backup);
         renderAdminDashboard(contentElement, options);
-        window.alert(error && error.message ? error.message : 'Die Einstellungen konnten nicht gespeichert werden.');
+        await showAdminInfo_({
+          eyebrow: 'Speichern nicht möglich',
+          title: 'Einstellungen konnten nicht gespeichert werden',
+          message: getAdminErrorMessage(
+            error,
+            'Die Einstellungen konnten nicht gespeichert werden.'
+          ),
+          tone: 'error'
+        });
       }
     }
   );
@@ -2961,9 +2974,14 @@ function openEventForm(
 
         if (!editing) {
           const addNow =
-            window.confirm(
-              'Veranstaltung wurde angelegt. Jetzt direkt den ersten Einsatz oder eine Liste hinzufügen?'
-            );
+            await showAdminConfirm_({
+              eyebrow: 'Veranstaltung angelegt',
+              title: 'Direkt eine Helferliste hinzufügen?',
+              message:
+                'Die Veranstaltung wurde gespeichert. Möchtest du jetzt direkt den ersten Einsatz oder eine Helferliste anlegen?',
+              confirmLabel: 'Helferliste anlegen',
+              cancelLabel: 'Später'
+            });
 
           if (addNow) {
             const newEvent =
@@ -3002,8 +3020,10 @@ function openEventForm(
           options
         );
 
-        window.alert(
-          buildAdminOperationError_(
+        await showAdminInfo_({
+          eyebrow: 'Speichern nicht möglich',
+          title: 'Veranstaltung konnte nicht gespeichert werden',
+          message: buildAdminOperationError_(
             error,
             {
               entityLabel: 'Die Veranstaltung',
@@ -3011,8 +3031,9 @@ function openEventForm(
               operation: 'gespeichert',
               fallback: 'Die Veranstaltung konnte nicht gespeichert werden.'
             }
-          )
-        );
+          ),
+          tone: 'error'
+        });
       }
     }
   );
@@ -3661,8 +3682,10 @@ function openListForm(
           options
         );
 
-        window.alert(
-          buildAdminOperationError_(
+        await showAdminInfo_({
+          eyebrow: 'Speichern nicht möglich',
+          title: 'Helferliste konnte nicht gespeichert werden',
+          message: buildAdminOperationError_(
             error,
             {
               entityLabel: 'Die Helferliste',
@@ -3670,8 +3693,9 @@ function openListForm(
               operation: 'gespeichert',
               fallback: 'Die Helferliste konnte nicht gespeichert werden.'
             }
-          )
-        );
+          ),
+          tone: 'error'
+        });
       }
     }
   );
@@ -3683,9 +3707,13 @@ async function deleteEntry(
   entryId
 ) {
   if (
-    !window.confirm(
-      'Diese Eintragung wirklich löschen?'
-    )
+    !(await showAdminConfirm_({
+      eyebrow: 'Eintragung löschen',
+      title: 'Eintragung wirklich löschen?',
+      message: 'Die Eintragung wird dauerhaft aus dieser Helferliste entfernt.',
+      confirmLabel: 'Eintragung löschen',
+      danger: true
+    }))
   ) {
     return;
   }
@@ -3730,12 +3758,15 @@ async function deleteEntry(
       options
     );
 
-    window.alert(
-      error &&
-      error.message
-        ? error.message
-        : 'Die Eintragung konnte nicht gelöscht werden.'
-    );
+    await showAdminInfo_({
+      eyebrow: 'Löschen nicht möglich',
+      title: 'Eintragung konnte nicht gelöscht werden',
+      message: getAdminErrorMessage(
+        error,
+        'Die Eintragung konnte nicht gelöscht werden.'
+      ),
+      tone: 'error'
+    });
   }
 }
 
@@ -3748,9 +3779,19 @@ async function deleteList(
     findList(listId);
 
   if (
-    !window.confirm(
-      'Diesen Einsatz beziehungsweise diese Liste wirklich löschen?'
-    )
+    !(await showAdminConfirm_({
+      eyebrow: 'Helferliste löschen',
+      title: 'Helferliste wirklich löschen?',
+      message:
+        'Soll die Helferliste „' +
+        String(
+          existingList && existingList.titel ||
+          'Unbenannte Helferliste'
+        ) +
+        '“ dauerhaft gelöscht werden?',
+      confirmLabel: 'Helferliste löschen',
+      danger: true
+    }))
   ) {
     return;
   }
@@ -3795,8 +3836,10 @@ async function deleteList(
       options
     );
 
-    window.alert(
-      buildAdminOperationError_(
+    await showAdminInfo_({
+      eyebrow: 'Löschen nicht möglich',
+      title: 'Helferliste konnte nicht gelöscht werden',
+      message: buildAdminOperationError_(
         error,
         {
           entityLabel: 'Die Helferliste',
@@ -3805,8 +3848,9 @@ async function deleteList(
           operation: 'gelöscht',
           fallback: 'Die Helferliste konnte nicht gelöscht werden.'
         }
-      )
-    );
+      ),
+      tone: 'error'
+    });
   }
 }
 
@@ -3819,9 +3863,15 @@ async function archiveEvent(
     findEvent(eventId);
 
   if (
-    !window.confirm(
-      'Soll diese Veranstaltung einschließlich aller verbundenen Einsätze, Listen und Eintragungen archiviert werden? Sie kann später im Archiv vollständig wiederhergestellt werden.'
-    )
+    !(await showAdminConfirm_({
+      eyebrow: 'Veranstaltung archivieren',
+      title: 'Veranstaltung ins Archiv verschieben?',
+      message:
+        '„' +
+        String(existingEvent && existingEvent.titel || 'Veranstaltung') +
+        '“ wird einschließlich aller Helferlisten und Eintragungen archiviert. Sie kann später vollständig wiederhergestellt werden.',
+      confirmLabel: 'Archivieren'
+    }))
   ) {
     return;
   }
@@ -3867,8 +3917,10 @@ async function archiveEvent(
       options
     );
 
-    window.alert(
-      buildAdminOperationError_(
+    await showAdminInfo_({
+      eyebrow: 'Archivieren nicht möglich',
+      title: 'Veranstaltung konnte nicht archiviert werden',
+      message: buildAdminOperationError_(
         error,
         {
           entityLabel: 'Die Veranstaltung',
@@ -3877,8 +3929,9 @@ async function archiveEvent(
           operation: 'archiviert',
           fallback: 'Die Veranstaltung konnte nicht archiviert werden.'
         }
-      )
-    );
+      ),
+      tone: 'error'
+    });
   }
 }
 
@@ -3891,9 +3944,16 @@ async function deleteEvent(
     findEvent(eventId);
 
   if (
-    !window.confirm(
-      'Soll diese Veranstaltung einschließlich aller verbundenen Einsätze, Listen und Eintragungen wirklich gelöscht werden?'
-    )
+    !(await showAdminConfirm_({
+      eyebrow: 'Veranstaltung löschen',
+      title: 'Veranstaltung wirklich löschen?',
+      message:
+        '„' +
+        String(existingEvent && existingEvent.titel || 'Veranstaltung') +
+        '“ wird einschließlich aller Helferlisten und Eintragungen dauerhaft gelöscht.',
+      confirmLabel: 'Veranstaltung löschen',
+      danger: true
+    }))
   ) {
     return;
   }
@@ -3938,8 +3998,10 @@ async function deleteEvent(
       options
     );
 
-    window.alert(
-      buildAdminOperationError_(
+    await showAdminInfo_({
+      eyebrow: 'Löschen nicht möglich',
+      title: 'Veranstaltung konnte nicht gelöscht werden',
+      message: buildAdminOperationError_(
         error,
         {
           entityLabel: 'Die Veranstaltung',
@@ -3948,8 +4010,9 @@ async function deleteEvent(
           operation: 'gelöscht',
           fallback: 'Die Veranstaltung konnte nicht gelöscht werden.'
         }
-      )
-    );
+      ),
+      tone: 'error'
+    });
   }
 }
 
@@ -3958,20 +4021,57 @@ async function copyList(
   options,
   listId
 ) {
-  await runAdminMutation(
-    contentElement,
-    options,
-    () =>
-      apiPost(
-        'duplicatelist',
-        {
-          id:
-            listId
-        },
-        getStoredToken()
+  const list =
+    findList(listId);
+
+  const closeProgress =
+    showAdminProgress_({
+      eyebrow: 'Helferliste kopieren',
+      title: 'Einsatz wird kopiert',
+      message:
+        'Die Helferliste „' +
+        String(list && list.titel || 'Unbenannte Helferliste') +
+        '“ wird kopiert. Einen kleinen Moment bitte.'
+    });
+
+  try {
+    await apiPost(
+      'duplicatelist',
+      {
+        id:
+          listId
+      },
+      getStoredToken()
+    );
+
+    await refreshStore();
+
+    renderAdminDashboard(
+      contentElement,
+      options
+    );
+
+    closeProgress();
+
+    showAdminToast(
+      contentElement,
+      'Einsatz kopiert.'
+    );
+  } catch (error) {
+    closeProgress();
+
+    await showAdminInfo_({
+      eyebrow: 'Kopieren nicht möglich',
+      title: 'Einsatz konnte nicht kopiert werden',
+      message: getAdminErrorMessage(
+        error,
+        'Der Einsatz konnte nicht kopiert werden.'
       ),
-    'Einsatz kopiert.'
-  );
+      tone: 'error'
+    });
+  } finally {
+    closeProgress();
+  }
 }
 
 async function copyWholeEvent(
@@ -3989,27 +4089,42 @@ async function copyWholeEvent(
   }
 
   const newTitle =
-    window.prompt(
-      'Titel der Kopie:',
-      event.titel +
-      ' – Kopie'
-    );
+    await showAdminPrompt_({
+      eyebrow: 'Veranstaltung kopieren',
+      title: 'Titel der Kopie',
+      message: 'Lege den Titel für die neue Veranstaltung fest.',
+      value:
+        event.titel +
+        ' – Kopie',
+      confirmLabel: 'Weiter'
+    });
 
   if (!newTitle) {
     return;
   }
 
   const newDate =
-    window.prompt(
-      'Neues Startdatum im Format TT.MM.JJJJ:',
-      event.startdatum || ''
-    );
+    await showAdminPrompt_({
+      eyebrow: 'Veranstaltung kopieren',
+      title: 'Neues Startdatum',
+      message: 'Bitte gib das neue Startdatum im Format TT.MM.JJJJ ein.',
+      value: event.startdatum || '',
+      placeholder: 'TT.MM.JJJJ',
+      confirmLabel: 'Kopieren'
+    });
 
   if (
     newDate === null
   ) {
     return;
   }
+
+  const closeProgress =
+    showAdminProgress_({
+      eyebrow: 'Veranstaltung kopieren',
+      title: 'Veranstaltung wird kopiert',
+      message: 'Die Veranstaltung und ihre Helferlisten werden kopiert. Einen kleinen Moment bitte.'
+    });
 
   try {
     const copiedEvent =
@@ -4102,12 +4217,17 @@ async function copyWholeEvent(
       options
     );
   } catch (error) {
-    window.alert(
-      error &&
-      error.message
-        ? error.message
-        : 'Die Veranstaltung konnte nicht kopiert werden.'
-    );
+    await showAdminInfo_({
+      eyebrow: 'Kopieren nicht möglich',
+      title: 'Veranstaltung konnte nicht kopiert werden',
+      message: getAdminErrorMessage(
+        error,
+        'Die Veranstaltung konnte nicht kopiert werden.'
+      ),
+      tone: 'error'
+    });
+  } finally {
+    closeProgress();
   }
 }
 
@@ -4193,12 +4313,15 @@ async function runAdminMutation(
       options
     );
   } catch (error) {
-    window.alert(
-      error &&
-      error.message
-        ? error.message
-        : 'Die Änderung konnte nicht gespeichert werden.'
-    );
+    await showAdminInfo_({
+      eyebrow: 'Änderung nicht möglich',
+      title: 'Der Vorgang konnte nicht abgeschlossen werden',
+      message: getAdminErrorMessage(
+        error,
+        'Die Änderung konnte nicht gespeichert werden.'
+      ),
+      tone: 'error'
+    });
   }
 }
 
@@ -4213,12 +4336,16 @@ function bindAdminSafeClose(
     .forEach(button => {
       button.addEventListener(
         'click',
-        () => {
+        async () => {
           if (
             isDirty() &&
-            !window.confirm(
-              'Ungespeicherte Eingaben verwerfen?'
-            )
+            !(await showAdminConfirm_({
+              eyebrow: 'Ungespeicherte Eingaben',
+              title: 'Eingaben wirklich verwerfen?',
+              message: 'Die Änderungen in diesem Fenster wurden noch nicht gespeichert.',
+              confirmLabel: 'Eingaben verwerfen',
+              danger: true
+            }))
           ) {
             return;
           }
@@ -4376,9 +4503,12 @@ function printSingleEvent_(eventId) {
     findEvent(eventId);
 
   if (!event) {
-    window.alert(
-      'Die Veranstaltung wurde nicht gefunden.'
-    );
+    showAdminInfo_({
+      eyebrow: 'Drucken nicht möglich',
+      title: 'Veranstaltung nicht gefunden',
+      message: 'Die Veranstaltung wurde möglicherweise zwischenzeitlich gelöscht oder archiviert.',
+      tone: 'error'
+    });
     return;
   }
 
@@ -4409,9 +4539,12 @@ function printSingleList_(listId) {
     findList(listId);
 
   if (!result) {
-    window.alert(
-      'Die Liste wurde nicht gefunden.'
-    );
+    showAdminInfo_({
+      eyebrow: 'Drucken nicht möglich',
+      title: 'Helferliste nicht gefunden',
+      message: 'Die Helferliste wurde möglicherweise zwischenzeitlich gelöscht oder archiviert.',
+      tone: 'error'
+    });
     return;
   }
 
@@ -5124,6 +5257,315 @@ function germanToIsoDate(value) {
         String(match[1]).padStart(2, '0')
       ].join('-')
     : '';
+}
+
+function createAdminNotice_(
+  options = {}
+) {
+  const root =
+    document.createElement('div');
+
+  root.className =
+    'dialog-backdrop admin-notice-backdrop';
+
+  const toneClass =
+    options.tone === 'error'
+      ? ' admin-notice-error'
+      : '';
+
+  root.innerHTML = `
+    <section
+      class="dialog-card admin-notice-card${toneClass}"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="adminNoticeTitle"
+      aria-describedby="adminNoticeMessage"
+    >
+      <div class="admin-notice-content">
+        ${options.progress
+          ? '<div class="admin-notice-spinner" aria-hidden="true"></div>'
+          : '<div class="admin-notice-symbol" aria-hidden="true">' +
+            (options.tone === 'error' ? '!' : 'i') +
+            '</div>'}
+
+        <div class="admin-notice-copy">
+          <span class="eyebrow">
+            ${escapeHtml(options.eyebrow || 'Hinweis')}
+          </span>
+          <h2 id="adminNoticeTitle">
+            ${escapeHtml(options.title || 'Information')}
+          </h2>
+          <div id="adminNoticeMessage" class="admin-notice-message">
+            ${escapeHtml(options.message || '')
+              .replace(/\n/g, '<br>')}
+          </div>
+        </div>
+      </div>
+
+      ${options.actions || ''}
+    </section>
+  `;
+
+  document.body.appendChild(root);
+
+  return root;
+}
+
+function showAdminConfirm_(
+  options = {}
+) {
+  return new Promise(resolve => {
+    const actions = `
+      <div class="dialog-actions admin-notice-actions">
+        <button
+          class="button button-secondary"
+          type="button"
+          data-admin-notice-cancel
+        >
+          ${escapeHtml(options.cancelLabel || 'Abbrechen')}
+        </button>
+        <button
+          class="button ${options.danger ? 'button-danger' : 'button-primary'}"
+          type="button"
+          data-admin-notice-confirm
+        >
+          ${escapeHtml(options.confirmLabel || 'Bestätigen')}
+        </button>
+      </div>
+    `;
+
+    const root =
+      createAdminNotice_({
+        ...options,
+        actions
+      });
+
+    let finished = false;
+
+    const finish = result => {
+      if (finished) {
+        return;
+      }
+
+      finished = true;
+      document.removeEventListener(
+        'keydown',
+        handleKeydown
+      );
+      root.remove();
+      resolve(result);
+    };
+
+    const handleKeydown = event => {
+      if (event.key === 'Escape') {
+        finish(false);
+      }
+    };
+
+    root
+      .querySelector(
+        '[data-admin-notice-cancel]'
+      )
+      .addEventListener(
+        'click',
+        () => finish(false)
+      );
+
+    const confirmButton =
+      root.querySelector(
+        '[data-admin-notice-confirm]'
+      );
+
+    confirmButton.addEventListener(
+      'click',
+      () => finish(true)
+    );
+
+    document.addEventListener(
+      'keydown',
+      handleKeydown
+    );
+
+    confirmButton.focus();
+  });
+}
+
+function showAdminInfo_(
+  options = {}
+) {
+  return new Promise(resolve => {
+    const actions = `
+      <div class="dialog-actions admin-notice-actions">
+        <button
+          class="button button-primary"
+          type="button"
+          data-admin-notice-confirm
+        >
+          ${escapeHtml(options.confirmLabel || 'Verstanden')}
+        </button>
+      </div>
+    `;
+
+    const root =
+      createAdminNotice_({
+        ...options,
+        actions
+      });
+
+    const close = () => {
+      document.removeEventListener(
+        'keydown',
+        handleKeydown
+      );
+      root.remove();
+      resolve();
+    };
+
+    const handleKeydown = event => {
+      if (
+        event.key === 'Escape' ||
+        event.key === 'Enter'
+      ) {
+        close();
+      }
+    };
+
+    const button =
+      root.querySelector(
+        '[data-admin-notice-confirm]'
+      );
+
+    button.addEventListener(
+      'click',
+      close
+    );
+
+    document.addEventListener(
+      'keydown',
+      handleKeydown
+    );
+
+    button.focus();
+  });
+}
+
+function showAdminPrompt_(
+  options = {}
+) {
+  return new Promise(resolve => {
+    const inputId =
+      'adminNoticeInput_' +
+      Date.now();
+
+    const actions = `
+      <div class="admin-notice-input-wrap">
+        <label class="form-field" for="${inputId}">
+          <span>${escapeHtml(options.label || options.title || 'Eingabe')}</span>
+          <input
+            id="${inputId}"
+            type="text"
+            value="${escapeHtml(options.value || '')}"
+            placeholder="${escapeHtml(options.placeholder || '')}"
+            autocomplete="off"
+          >
+        </label>
+      </div>
+      <div class="dialog-actions admin-notice-actions">
+        <button
+          class="button button-secondary"
+          type="button"
+          data-admin-notice-cancel
+        >
+          Abbrechen
+        </button>
+        <button
+          class="button button-primary"
+          type="button"
+          data-admin-notice-confirm
+        >
+          ${escapeHtml(options.confirmLabel || 'Übernehmen')}
+        </button>
+      </div>
+    `;
+
+    const root =
+      createAdminNotice_({
+        ...options,
+        actions
+      });
+
+    const input =
+      root.querySelector(
+        '#' + inputId
+      );
+
+    let finished = false;
+
+    const finish = result => {
+      if (finished) {
+        return;
+      }
+
+      finished = true;
+      document.removeEventListener(
+        'keydown',
+        handleKeydown
+      );
+      root.remove();
+      resolve(result);
+    };
+
+    const handleKeydown = event => {
+      if (event.key === 'Escape') {
+        finish(null);
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        finish(input.value);
+      }
+    };
+
+    root
+      .querySelector(
+        '[data-admin-notice-cancel]'
+      )
+      .addEventListener(
+        'click',
+        () => finish(null)
+      );
+
+    root
+      .querySelector(
+        '[data-admin-notice-confirm]'
+      )
+      .addEventListener(
+        'click',
+        () => finish(input.value)
+      );
+
+    document.addEventListener(
+      'keydown',
+      handleKeydown
+    );
+
+    input.focus();
+    input.select();
+  });
+}
+
+function showAdminProgress_(
+  options = {}
+) {
+  const root =
+    createAdminNotice_({
+      ...options,
+      progress: true
+    });
+
+  root
+    .querySelector('.dialog-card')
+    .setAttribute('aria-busy', 'true');
+
+  return () => root.remove();
 }
 
 function showAdminToast(

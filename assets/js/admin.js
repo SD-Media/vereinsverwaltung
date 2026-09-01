@@ -70,6 +70,18 @@ export async function renderAdminPage(
   const session =
     await validateSession();
 
+  /*
+   * Der Benutzer kann während der Sitzungsprüfung bereits auf eine
+   * andere Seite wechseln. Eine verspätete Admin-Antwort darf die
+   * inzwischen gewählte Seite dann nicht wieder überschreiben.
+   */
+  if (
+    typeof options.isRouteCurrent === 'function' &&
+    !options.isRouteCurrent()
+  ) {
+    return;
+  }
+
   if (!session) {
     stopSessionRefresh();
 
@@ -265,7 +277,7 @@ function renderAdminDashboard(
       events
     );
 
-  contentElement.innerHTML = `
+  const dashboardMarkup = `
     <section class="admin-hero">
       <div>
         <span class="eyebrow">
@@ -412,12 +424,63 @@ function renderAdminDashboard(
     <div id="adminToastRoot" class="toast-root"></div>
   `;
 
+  replaceAdminDashboardMarkup_(
+    contentElement,
+    dashboardMarkup
+  );
+
   bindAdminActions(
     contentElement,
     options
   );
 
   bindAdminMailbox(contentElement);
+}
+
+/**
+ * Aktualisiert die Übersicht, ohne einen bereits geöffneten Dialog zu
+ * zerstören. Das Dialogelement wird vor dem Neuaufbau ausgehängt und
+ * anschließend mitsamt Eingaben, Fokuszustand und Ereignisbindungen
+ * wieder eingesetzt.
+ */
+function replaceAdminDashboardMarkup_(
+  contentElement,
+  markup
+) {
+  const existingDialogRoot =
+    contentElement.querySelector(
+      '#adminDialogRoot'
+    );
+
+  const preserveDialog = Boolean(
+    existingDialogRoot &&
+    existingDialogRoot.childElementCount > 0
+  );
+
+  if (preserveDialog) {
+    existingDialogRoot.remove();
+  }
+
+  contentElement.innerHTML = markup;
+
+  if (!preserveDialog) {
+    return;
+  }
+
+  const newDialogRoot =
+    contentElement.querySelector(
+      '#adminDialogRoot'
+    );
+
+  if (newDialogRoot) {
+    newDialogRoot.replaceWith(
+      existingDialogRoot
+    );
+  } else {
+    contentElement.appendChild(
+      existingDialogRoot
+    );
+  }
 }
 
 function renderAdminEventCard(
@@ -1435,6 +1498,65 @@ function getAdminErrorMessage(
   return error && error.message
     ? error.message
     : fallback;
+}
+
+function buildAdminOperationError_(
+  error,
+  details = {}
+) {
+  const serverMessage =
+    getAdminErrorMessage(
+      error,
+      details.fallback ||
+        'Der Vorgang konnte nicht abgeschlossen werden.'
+    );
+
+  const entity = [
+    details.entityLabel,
+    details.entityName
+      ? '„' + details.entityName + '“'
+      : ''
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const introduction =
+    entity
+      ? entity + ' konnte nicht ' +
+        (details.operation || 'bearbeitet') +
+        ' werden.'
+      : 'Der Vorgang konnte nicht abgeschlossen werden.';
+
+  let guidance =
+    'Deine vorherige Ansicht wurde wiederhergestellt. Bitte prüfe die aktuellen Daten und versuche es erneut.';
+
+  if (
+    /nicht gefunden|existiert nicht|bereits gelöscht|wurde gelöscht/i
+      .test(serverMessage)
+  ) {
+    guidance =
+      'Der Datensatz wurde wahrscheinlich zwischenzeitlich von einer anderen Person gelöscht oder archiviert. Die Übersicht wird aktualisiert.';
+  } else if (
+    /zu lange gedauert|verbindung|netzwerk|abgebrochen/i
+      .test(serverMessage)
+  ) {
+    guidance =
+      'Die Verbindung wurde unterbrochen oder die Antwort hat zu lange gedauert. Prüfe vor einem erneuten Speichern bitte, ob die Änderung eventuell trotzdem übernommen wurde.';
+  } else if (
+    /nicht autorisiert|sitzung|anmeld/i
+      .test(serverMessage)
+  ) {
+    guidance =
+      'Die Admin-Sitzung ist möglicherweise abgelaufen. Melde dich erneut an und wiederhole den Vorgang.';
+  }
+
+  return (
+    introduction +
+    '\n\nGrund: ' +
+    serverMessage +
+    '\n\n' +
+    guidance
+  );
 }
 
 async function openCategoryManagementDialog(
@@ -2822,10 +2944,15 @@ function openEventForm(
         );
 
         window.alert(
-          error &&
-          error.message
-            ? error.message
-            : 'Die Veranstaltung konnte nicht gespeichert werden.'
+          buildAdminOperationError_(
+            error,
+            {
+              entityLabel: 'Die Veranstaltung',
+              entityName: payload.titel,
+              operation: 'gespeichert',
+              fallback: 'Die Veranstaltung konnte nicht gespeichert werden.'
+            }
+          )
         );
       }
     }
@@ -3476,10 +3603,15 @@ function openListForm(
         );
 
         window.alert(
-          error &&
-          error.message
-            ? error.message
-            : 'Der Einsatz konnte nicht gespeichert werden.'
+          buildAdminOperationError_(
+            error,
+            {
+              entityLabel: 'Die Helferliste',
+              entityName: payload.titel,
+              operation: 'gespeichert',
+              fallback: 'Die Helferliste konnte nicht gespeichert werden.'
+            }
+          )
         );
       }
     }
@@ -3553,6 +3685,9 @@ async function deleteList(
   options,
   listId
 ) {
+  const existingList =
+    findList(listId);
+
   if (
     !window.confirm(
       'Diesen Einsatz beziehungsweise diese Liste wirklich löschen?'
@@ -3602,10 +3737,16 @@ async function deleteList(
     );
 
     window.alert(
-      error &&
-      error.message
-        ? error.message
-        : 'Der Einsatz konnte nicht gelöscht werden.'
+      buildAdminOperationError_(
+        error,
+        {
+          entityLabel: 'Die Helferliste',
+          entityName:
+            existingList && existingList.titel,
+          operation: 'gelöscht',
+          fallback: 'Die Helferliste konnte nicht gelöscht werden.'
+        }
+      )
     );
   }
 }
@@ -3615,6 +3756,9 @@ async function archiveEvent(
   options,
   eventId
 ) {
+  const existingEvent =
+    findEvent(eventId);
+
   if (
     !window.confirm(
       'Soll diese Veranstaltung einschließlich aller verbundenen Einsätze, Listen und Eintragungen archiviert werden? Sie kann später im Archiv vollständig wiederhergestellt werden.'
@@ -3665,10 +3809,16 @@ async function archiveEvent(
     );
 
     window.alert(
-      error &&
-      error.message
-        ? error.message
-        : 'Die Veranstaltung konnte nicht archiviert werden.'
+      buildAdminOperationError_(
+        error,
+        {
+          entityLabel: 'Die Veranstaltung',
+          entityName:
+            existingEvent && existingEvent.titel,
+          operation: 'archiviert',
+          fallback: 'Die Veranstaltung konnte nicht archiviert werden.'
+        }
+      )
     );
   }
 }
@@ -3678,6 +3828,9 @@ async function deleteEvent(
   options,
   eventId
 ) {
+  const existingEvent =
+    findEvent(eventId);
+
   if (
     !window.confirm(
       'Soll diese Veranstaltung einschließlich aller verbundenen Einsätze, Listen und Eintragungen wirklich gelöscht werden?'
@@ -3727,10 +3880,16 @@ async function deleteEvent(
     );
 
     window.alert(
-      error &&
-      error.message
-        ? error.message
-        : 'Die Veranstaltung konnte nicht gelöscht werden.'
+      buildAdminOperationError_(
+        error,
+        {
+          entityLabel: 'Die Veranstaltung',
+          entityName:
+            existingEvent && existingEvent.titel,
+          operation: 'gelöscht',
+          fallback: 'Die Veranstaltung konnte nicht gelöscht werden.'
+        }
+      )
     );
   }
 }

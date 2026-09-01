@@ -38,7 +38,8 @@ import {
 } from './events.js';
 
 import {
-  renderAdminPage
+  renderAdminPage,
+  refreshAdminPageIfActive
 } from './admin.js';
 
 import {
@@ -125,7 +126,7 @@ async function initialize() {
 
   if (hasCachedData) {
     applyTenantConfiguration();
-    await renderCurrentPage();
+    await refreshCurrentPageAfterStoreChange_();
   } else {
     renderInitialLoadingNotice();
   }
@@ -143,7 +144,7 @@ async function initialize() {
       'Verbunden'
     );
 
-    await renderCurrentPage();
+    await refreshCurrentPageAfterStoreChange_();
 
     /*
      * Punkte und weitere vollständige Daten werden erst geladen,
@@ -418,6 +419,15 @@ async function renderCurrentPage() {
   }
 
   return renderDashboard();
+}
+
+async function refreshCurrentPageAfterStoreChange_() {
+  if (getCurrentRoute() === 'admin') {
+    refreshAdminPageIfActive();
+    return;
+  }
+
+  return renderCurrentPage();
 }
 
 async function refreshInBackground() {

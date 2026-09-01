@@ -4,6 +4,7 @@
 
 const routes = new Map();
 let fallbackRoute = 'dashboard';
+let routeRevision = 0;
 
 export function registerRoute(name, render) {
   routes.set(name, render);
@@ -43,6 +44,7 @@ export function getCurrentRoute() {
 
 function renderCurrentRoute() {
   const routeName = getCurrentRoute();
+  const revision = ++routeRevision;
   const render =
     routes.get(routeName) ||
     routes.get(fallbackRoute);
@@ -57,6 +59,15 @@ function renderCurrentRoute() {
     });
 
   if (typeof render === 'function') {
-    render();
+    render({
+      routeName,
+      revision,
+      isCurrent() {
+        return (
+          revision === routeRevision &&
+          routeName === getCurrentRoute()
+        );
+      }
+    });
   }
 }

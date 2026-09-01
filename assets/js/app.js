@@ -339,11 +339,16 @@ function registerRoutes() {
 
   registerRoute(
     'admin',
-    () =>
+    routeContext =>
       renderAdminPage({
         contentElement:
           elements.content,
-        setPageHeading
+        setPageHeading,
+        isRouteCurrent:
+          routeContext &&
+          typeof routeContext.isCurrent === 'function'
+            ? routeContext.isCurrent
+            : () => getCurrentRoute() === 'admin'
       })
   );
 

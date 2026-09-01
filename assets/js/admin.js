@@ -43,6 +43,7 @@ import {
 const adminState = {
   session: null,
   refreshTimer: null,
+  activeView: null,
   pointsVisible: false,
   pointsSort:
     'name-asc'
@@ -64,8 +65,19 @@ export async function renderAdminPage(
     'Veranstaltungen, Listen und Eintragungen verwalten'
   );
 
-  contentElement.innerHTML =
-    createAdminLoadingMarkup();
+  /*
+   * Eine bereits sichtbare Adminoberfläche darf während einer erneuten
+   * Sitzungsprüfung nicht durch einen Ladebildschirm ersetzt werden.
+   * Sonst verschwinden Dialoge noch bevor die asynchrone Prüfung endet.
+   */
+  if (
+    !contentElement.querySelector(
+      '#adminDialogRoot'
+    )
+  ) {
+    contentElement.innerHTML =
+      createAdminLoadingMarkup();
+  }
 
   const session =
     await validateSession();
@@ -85,6 +97,9 @@ export async function renderAdminPage(
   if (!session) {
     stopSessionRefresh();
 
+    adminState.activeView =
+      null;
+
     renderLogin(
       contentElement,
       options
@@ -95,6 +110,11 @@ export async function renderAdminPage(
 
   adminState.session =
     session;
+
+  adminState.activeView = {
+    contentElement,
+    options
+  };
 
   window.dispatchEvent(
     new CustomEvent(
@@ -113,6 +133,33 @@ export async function renderAdminPage(
   renderAdminDashboard(
     contentElement,
     options
+  );
+}
+
+/**
+ * Spielt einen neuen Datenstand nur in die weiterhin aktive
+ * Adminoberfläche ein. Diese Funktion wird nach dem initialen Laden des
+ * Stores verwendet, damit nicht noch einmal die komplette Adminroute
+ * einschließlich Sitzungsprüfung gestartet werden muss.
+ */
+export function refreshAdminPageIfActive() {
+  const activeView =
+    adminState.activeView;
+
+  if (!activeView) {
+    return;
+  }
+
+  if (
+    typeof activeView.options.isRouteCurrent === 'function' &&
+    !activeView.options.isRouteCurrent()
+  ) {
+    return;
+  }
+
+  renderAdminDashboard(
+    activeView.contentElement,
+    activeView.options
   );
 }
 
@@ -252,6 +299,18 @@ function renderAdminDashboard(
   contentElement,
   options
 ) {
+  /*
+   * Zentrale Schutzschranke: Keine noch so spät eintreffende
+   * Speicher- oder Aktualisierungsantwort darf Admininhalt in eine
+   * inzwischen gewählte andere Seite zeichnen.
+   */
+  if (
+    typeof options.isRouteCurrent === 'function' &&
+    !options.isRouteCurrent()
+  ) {
+    return;
+  }
+
   const snapshot =
     getStoreSnapshot();
 

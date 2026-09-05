@@ -9,6 +9,25 @@ import {
 
 const tenant = resolveTenant();
 
+const READ_ONLY_POST_ACTIONS = new Set([
+  'login',
+  'session',
+  'refreshsession',
+  'logout',
+  'messages',
+  'markmessageread',
+  'tenantsettings',
+  'allcategories',
+  'archiveoverview',
+  'archiveeventdetails',
+  'superadminlogin',
+  'superadminsession',
+  'superadminlogout',
+  'superadmintenants',
+  'superadmintenantdetails',
+  'superadminmessages'
+]);
+
 function isPerformanceTraceEnabled_(action) {
   // Produktionsbetrieb: Die abgeschlossene temporäre Messphase
   // wird nicht mehr bei Webanfragen aktiviert.
@@ -144,6 +163,13 @@ export async function apiPost(
   token = '',
   requestOptions = {}
 ) {
+  if (!READ_ONLY_POST_ACTIONS.has(String(action || '').toLowerCase())) {
+    throw new ApiError(
+      'Diese frühere Webseite ist nur noch zur Ansicht verfügbar. Bitte wechseln Sie für Eintragungen und Änderungen zur neuen Vereinsseite.',
+      { action }
+    );
+  }
+
   const body = {
     action,
     ...payload

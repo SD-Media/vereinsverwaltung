@@ -58,6 +58,10 @@ import {
   validateSession
 } from './auth.js';
 
+import {
+  initializeReadOnlyMode
+} from './readonly.js';
+
 const elements = {
   app:
     document.getElementById('app'),
@@ -96,6 +100,7 @@ document.addEventListener(
 
 async function initialize() {
   initializeTheme_();
+  initializeReadOnlyMode();
   bindGlobalUtilityButtons_();
 
   const appContext = resolveAppContext();
